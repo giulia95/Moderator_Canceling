@@ -1,0 +1,46 @@
+# Model Arguments
+
+model_name_or_path: "microsoft/deberta-v3-large"
+trust_remote_code: True
+device_map: "cuda"
+
+# Data Arguments
+
+dataset_name: "PKU-Alignment/Beavertails"
+train_split: "330k_train"
+test_split: "330k_test"
+eval_split_ratio: 0.1
+max_seq_length: 512
+pad_to_max_length: False
+template: "Question: {question} Answer: {answer}"
+
+# Training Arguments
+seed: 42
+run_name: "QA-DeBERTa-v3-large"
+output_dir: "output/QA-DeBERTa-v3-large"
+report_to: "wandb"
+log_level: "info"
+bf16: True
+tf32: True
+ddp_find_unused_parameters: False
+use_liger_kernel: True
+gradient_checkpointing: True
+gradient_checkpointing_kwargs:
+  use_reentrant: False
+group_by_length: True
+num_train_epochs: 3
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
+gradient_accumulation_steps: 4
+warmup_ratio: 0.03
+weight_decay: 0.0005
+learning_rate: 0.000006 # 6e-6
+lr_scheduler_type: "cosine"
+eval_strategy: "steps"
+eval_steps: 0.1
+save_steps: 0.1
+logging_steps: 10
+metric_for_best_model: "eval_f1"
+load_best_model_at_end: True
+save_total_limit: 1
+push_to_hub: True
