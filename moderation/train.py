@@ -3,6 +3,7 @@ import os
 import sys
 
 from functools import partial
+from importlib.util import find_spec
 from pathlib import Path
 
 import datasets
@@ -22,10 +23,6 @@ from transformers.hf_argparser import HfArgumentParser
 from arguments import DataArguments, ModelArguments
 from utils import compute_metrics, load_qa_dataset, tokenize
 
-
-os.environ["WANDB_PROJECT"] = "bert-qa-moderation"
-os.environ["WANDB_LOG"] = "false"
-os.environ["WANDB_WATCH"] = "false"
 
 logger = logging.getLogger(__name__)
 
@@ -169,5 +166,12 @@ if __name__ == "__main__":
     logger.info("Data arguments %s", data_args)
     logger.info("Model arguments %s", model_args)
     logger.info("Training arguments %s", training_args)
+
+    if "wandb" in training_args.report_to and find_spec("wandb") is not None:
+        os.environ["WANDB_PROJECT"] = "bert-qa-moderation"
+        os.environ["WANDB_LOG"] = "false"
+        os.environ["WANDB_WATCH"] = "false"
+    else:
+        logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
 
     main(model_args, data_args, training_args)
