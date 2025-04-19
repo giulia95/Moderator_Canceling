@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moderation"
+version = "0.0.1"
+description = "QA moderation for Beavertails"
+readme = "README.md"
+authors = [{ name = "Giuseppe Magazzù", email = "giuseppe.magazu@gmail.com" }]
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+fix = true
+show-fixes = true
+
+[tool.ruff.lint]
+select = [
+    #"ERA",
+    "ANN",
+    "S",
+    "A",
+    #"D",
+    "C4",
+    "EM",
+    "ICN",
+    "LOG",
+    "G",
+    "INP",
+    "PIE",
+    "PYI",
+    "Q",
+    "RET",
+    "SLF",
+    "SIM",
+    "TID",
+    "TC",
+    "I",
+    "ARG",
+    "PTH",
+    "NPY",
+    "PD",
+    "N",
+    "PERF",
+    "E",
+    "W",
+    "F",
+    "RUF",
+    "TRY",
+]
+ignore = ["N806", "D100", "D104", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["INP001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+lines-between-types = 1
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
