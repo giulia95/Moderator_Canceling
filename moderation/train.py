@@ -166,4 +166,8 @@ if __name__ == "__main__":
         "fp16" if training_args.fp16 else "bf16" if training_args.bf16 else False,
     )
 
+    logger.info("Data arguments %s", data_args)
+    logger.info("Model arguments %s", model_args)
+    logger.info("Training arguments %s", training_args)
+
     main(model_args, data_args, training_args)
