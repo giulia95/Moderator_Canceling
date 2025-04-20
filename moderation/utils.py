@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Any, cast, overload
 
-import evaluate
 import numpy as np
 import torch
 
 from datasets import DatasetDict, load_dataset
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 
 if TYPE_CHECKING:
@@ -79,12 +79,23 @@ def tokenize(
     return tokenizer(examples["text"], padding=padding, max_length=max_length, truncation=True)
 
 
-f1 = evaluate.load("f1", config_name="multilabel")
-
-
 def compute_metrics(pred: "EvalPrediction") -> dict:
     preds = pred.predictions[0] if isinstance(pred.predictions, tuple) else pred.predictions
-    preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
-    labels = pred.label_ids
+    labels = pred.label_ids[0] if isinstance(pred.label_ids, tuple) else pred.label_ids
 
-    return f1.compute(predictions=preds, references=labels, average="macro") or {}
+    # convert logits to multi-hot vectors (same as using sigmoid with 0.5 threshold)
+    preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
+
+    flagged_labels = labels.any(axis=-1)
+    flagged_predictions = preds.any(axis=-1)
+
+    return {
+        "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
+        "flagged/precision": precision_score(flagged_labels, flagged_predictions),
+        "flagged/recall": recall_score(flagged_labels, flagged_predictions),
+        "flagged/f1": f1_score(flagged_labels, flagged_predictions),
+        "accuracy": accuracy_score(labels, preds),
+        "precision": precision_score(labels, preds, average="macro"),
+        "recall": recall_score(labels, preds, average="macro"),
+        "f1": f1_score(labels, preds, average="macro"),
+    }

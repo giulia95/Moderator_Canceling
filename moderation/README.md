@@ -7,9 +7,9 @@ Deberta moderator fine-tuned on [Beavertails](https://huggingface.co/datasets/PK
 - transformers
 - datasets
 - sentencepiece
-- evaluate
 - accelerate
 - liger-kernel
+- scikit-learn
 - wandb (optional)
 - hf_xet (optional)
 
