@@ -90,12 +90,15 @@ def compute_metrics(pred: "EvalPrediction") -> dict:
     flagged_predictions = preds.any(axis=-1)
 
     return {
+        "accuracy": accuracy_score(labels, preds),
+        "macro_precision": precision_score(labels, preds, average="macro"),
+        "macro_recall": recall_score(labels, preds, average="macro"),
+        "macro_f1": f1_score(labels, preds, average="macro"),
+        "micro_precision": precision_score(labels, preds, average="micro"),
+        "micro_recall": recall_score(labels, preds, average="micro"),
+        "micro_f1": f1_score(labels, preds, average="micro"),
         "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
         "flagged/precision": precision_score(flagged_labels, flagged_predictions),
         "flagged/recall": recall_score(flagged_labels, flagged_predictions),
         "flagged/f1": f1_score(flagged_labels, flagged_predictions),
-        "accuracy": accuracy_score(labels, preds),
-        "precision": precision_score(labels, preds, average="macro"),
-        "recall": recall_score(labels, preds, average="macro"),
-        "f1": f1_score(labels, preds, average="macro"),
     }
