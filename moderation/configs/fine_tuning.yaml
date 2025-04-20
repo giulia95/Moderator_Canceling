@@ -12,7 +12,7 @@ test_split: "330k_test"
 eval_split_ratio: 0.1
 max_seq_length: 512
 pad_to_max_length: False
-template: "Question: {question} Answer: {answer}"
+template: "{question} {answer}"
 
 # Training Arguments
 seed: 42
@@ -34,7 +34,7 @@ per_device_eval_batch_size: 8
 gradient_accumulation_steps: 4
 warmup_ratio: 0.03
 weight_decay: 0.0005
-learning_rate: 0.000006 # 6e-6
+learning_rate: 0.000006
 lr_scheduler_type: "cosine"
 eval_strategy: "steps"
 eval_steps: 0.1
