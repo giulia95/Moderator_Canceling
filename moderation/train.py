@@ -10,6 +10,7 @@ import datasets
 import transformers
 
 from transformers import (
+    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -41,13 +42,19 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
         trust_remote_code=model_args.trust_remote_code,
     )
 
-    model = AutoModelForSequenceClassification.from_pretrained(
+    config = AutoConfig.from_pretrained(
         model_args.model_name_or_path,
         finetuning_task="text-classification",
         problem_type="multi_label_classification",
         num_labels=len(labels),
         id2label=id2label,
         label2id=label2id,
+    )
+    config.cls_dropout = model_args.cls_dropout
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_args.model_name_or_path,
+        config=config,
         device_map=model_args.device_map,
         trust_remote_code=model_args.trust_remote_code,
     )

@@ -7,6 +7,10 @@ class ModelArguments:
         default="microsoft/deberta-v3-large",
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
+    cls_dropout: float = field(
+        default=0.1,
+        metadata={"help": "Dropout probability for the classifier"},
+    )
     trust_remote_code: bool = field(
         default=False,
         metadata={"help": "Whether or not to allow loading models from a remote repository on the Hub"},
