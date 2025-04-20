@@ -110,16 +110,20 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
     )
 
     train_result = trainer.train()
-    metrics = train_result.metrics
-
+    train_metrics = train_result.metrics
     trainer.save_model()
-    trainer.log_metrics("train", metrics)
-    trainer.save_metrics("train", metrics)
+    trainer.log_metrics("train", train_metrics)
+    trainer.save_metrics("train", train_metrics)
     trainer.save_state()
 
-    metrics = trainer.evaluate()
-    trainer.log_metrics("eval", metrics)
-    trainer.save_metrics("eval", metrics)
+    eval_metrics = trainer.evaluate()
+    trainer.log_metrics("eval", eval_metrics)
+    trainer.save_metrics("eval", eval_metrics)
+
+    test_results = trainer.predict(test_dataset)  # type: ignore
+    test_metrics = test_results.metrics
+    trainer.log_metrics("test", test_metrics)
+    trainer.save_metrics("test", test_metrics)
 
     kwargs = {
         "finetuned_from": model_args.model_name_or_path,
