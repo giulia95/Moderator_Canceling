@@ -31,12 +31,14 @@ logger = logging.getLogger(__name__)
 def main(model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments) -> None:
     set_seed(training_args.seed)
 
+    # Load dataset
     dataset, labels, id2label, label2id = load_qa_dataset(data_args.dataset_name, template=data_args.template)
     logger.info("Dataset loaded %s", dataset)
     logger.info("Labels: %s", labels)
     logger.info("Label2id: %s", label2id)
     logger.info("Id2label: %s", id2label)
 
+    # Load model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         trust_remote_code=model_args.trust_remote_code,
@@ -71,6 +73,7 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
 
     max_seq_length = min(max_seq_length, tokenizer.model_max_length)
 
+    # Prepare dataset and splits
     with training_args.main_process_first(desc="dataset map pre-processing"):
         dataset = dataset.map(
             partial(tokenize, tokenizer=tokenizer, max_length=max_seq_length, padding=data_args.padding),
@@ -109,6 +112,7 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
         data_collator=data_collator,
     )
 
+    # Training
     train_result = trainer.train()
     train_metrics = train_result.metrics
     trainer.save_model()
@@ -116,15 +120,18 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
     trainer.save_metrics("train", train_metrics)
     trainer.save_state()
 
+    # Evaluation
     eval_metrics = trainer.evaluate()
     trainer.log_metrics("eval", eval_metrics)
     trainer.save_metrics("eval", eval_metrics)
 
+    # Test
     test_results = trainer.predict(test_dataset)  # type: ignore
     test_metrics = test_results.metrics
     trainer.log_metrics("test", test_metrics)
     trainer.save_metrics("test", test_metrics)
 
+    # Push to hub
     kwargs = {
         "finetuned_from": model_args.model_name_or_path,
         "tags": ["multi-label", "question-answering", "text-classification"],
@@ -178,6 +185,7 @@ if __name__ == "__main__":
     logger.info("Model arguments %s", model_args)
     logger.info("Training arguments %s", training_args)
 
+    # Setup wandb if installed
     if "wandb" in training_args.report_to and find_spec("wandb") is not None:
         os.environ["WANDB_PROJECT"] = "bert-qa-moderation"
         os.environ["WANDB_LOG"] = "false"
