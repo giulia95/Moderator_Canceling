@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 def load_qa_dataset(  # type: ignore
     dataset_name: str,
     split: None = None,
+    config_name: str | None = None,
     template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["DatasetDict", list[str], dict[str, int], dict[int, str]]: ...
 
@@ -25,6 +26,7 @@ def load_qa_dataset(  # type: ignore
 def load_qa_dataset(  # type: ignore
     dataset_name: str,
     split: str,
+    config_name: str | None = None,
     template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["Dataset", list[str], dict[str, int], dict[int, str]]: ...
 
@@ -32,9 +34,10 @@ def load_qa_dataset(  # type: ignore
 def load_qa_dataset(
     dataset_name: str,
     split: str | None = None,
+    config_name: str | None = None,
     template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["Dataset | DatasetDict", list[str], dict[str, int], dict[int, str]]:
-    dataset = load_dataset(dataset_name, split=split)
+    dataset = load_dataset(dataset_name, name=config_name, split=split)
     categories: list[dict[str, bool]]
 
     if isinstance(dataset, DatasetDict):

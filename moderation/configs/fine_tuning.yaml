@@ -7,7 +7,8 @@ device_map: "cuda"
 
 # Data Arguments
 
-dataset_name: "PKU-Alignment/Beavertails"
+dataset_name: "saiteki-kai/Beavertails-it"
+config_name: "multilingual"
 train_split: "330k_train"
 test_split: "330k_test"
 eval_split_ratio: 0.1
