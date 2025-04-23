@@ -86,22 +86,39 @@ def compute_metrics(pred: "EvalPrediction") -> dict:
     preds = pred.predictions[0] if isinstance(pred.predictions, tuple) else pred.predictions
     labels = pred.label_ids[0] if isinstance(pred.label_ids, tuple) else pred.label_ids
 
+    return compute_all_metrics(preds, labels)
+
+
+def compute_all_metrics(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, str] | None = None) -> dict:
     # convert logits to multi-hot vectors (same as using sigmoid with 0.5 threshold)
     preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
 
     flagged_labels = labels.any(axis=-1)
     flagged_predictions = preds.any(axis=-1)
 
-    return {
+    metrics = {
         "accuracy": accuracy_score(labels, preds),
+        "macro_f1": f1_score(labels, preds, average="macro"),
         "macro_precision": precision_score(labels, preds, average="macro"),
         "macro_recall": recall_score(labels, preds, average="macro"),
-        "macro_f1": f1_score(labels, preds, average="macro"),
+        "micro_f1": f1_score(labels, preds, average="micro"),
         "micro_precision": precision_score(labels, preds, average="micro"),
         "micro_recall": recall_score(labels, preds, average="micro"),
-        "micro_f1": f1_score(labels, preds, average="micro"),
         "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
         "flagged/precision": precision_score(flagged_labels, flagged_predictions),
         "flagged/recall": recall_score(flagged_labels, flagged_predictions),
         "flagged/f1": f1_score(flagged_labels, flagged_predictions),
     }
+
+    if id2labels is not None:
+        for idx, label in id2labels.items():
+            metrics.update(
+                {
+                    f"{label}/accuracy": accuracy_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/precision": precision_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/recall": recall_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/f1": f1_score(labels[:, idx], preds[:, idx]),
+                }
+            )
+
+    return metrics
