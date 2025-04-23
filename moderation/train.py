@@ -32,7 +32,7 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
     set_seed(training_args.seed)
 
     # Load dataset
-    dataset, labels, id2label, label2id = load_qa_dataset(data_args.dataset_name, template=data_args.template)
+    dataset, labels, label2id, id2label = load_qa_dataset(data_args.dataset_name, template=data_args.template)
     logger.info("Dataset loaded %s", dataset)
     logger.info("Labels: %s", labels)
     logger.info("Label2id: %s", label2id)
