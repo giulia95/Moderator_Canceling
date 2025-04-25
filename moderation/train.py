@@ -5,6 +5,7 @@ import sys
 from functools import partial
 from importlib.util import find_spec
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import datasets
 import transformers
@@ -25,10 +26,18 @@ from arguments import DataArguments, ModelArguments
 from utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
 
 
+if TYPE_CHECKING:
+    from transformers import TrainerCallback
+
 logger = logging.getLogger(__name__)
 
 
-def main(model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments) -> None:
+def main(
+    model_args: ModelArguments,
+    data_args: DataArguments,
+    training_args: TrainingArguments,
+    callbacks: "list[TrainerCallback] | None" = None,
+) -> None:
     set_seed(training_args.seed)
 
     # Load dataset
@@ -119,6 +128,10 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
         data_collator=data_collator,
     )
 
+    if callbacks is not None:
+        for cb in callbacks:
+            trainer.add_callback(cb)
+
     # Training
     train_result = trainer.train()
     train_metrics = train_result.metrics
@@ -197,6 +210,7 @@ if __name__ == "__main__":
         os.environ["WANDB_PROJECT"] = "QA_Beavertails_" + model_args.model_name_or_path.split("/")[-1]
         os.environ["WANDB_LOG"] = "false"
         os.environ["WANDB_WATCH"] = "false"
+        os.environ["WANDB_NAME"] = training_args.run_name
     else:
         logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
 
