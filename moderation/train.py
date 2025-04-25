@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     # Setup wandb if installed
     if "wandb" in training_args.report_to and find_spec("wandb") is not None:
-        os.environ["WANDB_PROJECT"] = "bert-qa-moderation"
+        os.environ["WANDB_PROJECT"] = "QA_Beavertails_" + model_args.model_name_or_path.split("/")[-1]
         os.environ["WANDB_LOG"] = "false"
         os.environ["WANDB_WATCH"] = "false"
     else:
