@@ -52,8 +52,13 @@ def run(
     # Load model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
+        padding_side="right",
         trust_remote_code=model_args.trust_remote_code,
     )
+
+    if "Llama-3" in model_args.model_name_or_path:
+        tokenizer.pad_token = "<|finetune_right_pad_id|>"  # noqa: S105
+        tokenizer.pad_token_id = 128004
 
     config = AutoConfig.from_pretrained(
         model_args.model_name_or_path,
@@ -94,7 +99,13 @@ def run(
         )
 
         dataset = dataset.map(
-            partial(tokenize, tokenizer=tokenizer, max_length=max_seq_length, padding=data_args.padding),
+            partial(
+                tokenize,
+                tokenizer=tokenizer,
+                max_length=max_seq_length,
+                padding=data_args.padding,
+                add_eos_token=model_args.add_eos_token,
+            ),
             batched=True,
             desc="Tokenize dataset",
         )
