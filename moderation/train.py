@@ -29,10 +29,12 @@ from utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
 if TYPE_CHECKING:
     from transformers import TrainerCallback
 
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+
 logger = logging.getLogger(__name__)
 
 
-def main(
+def run(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
@@ -166,15 +168,7 @@ def main(
         trainer.create_model_card(**kwargs)
 
 
-if __name__ == "__main__":
-    # Parse arguments
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))  # type: ignore
-
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".yaml"):
-        model_args, data_args, training_args = parser.parse_yaml_file(Path(sys.argv[1]).resolve())
-    else:
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
+def setup_logging(model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments) -> None:
     # Set up logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -205,13 +199,26 @@ if __name__ == "__main__":
     logger.info("Model arguments %s", model_args)
     logger.info("Training arguments %s", training_args)
 
-    # Setup wandb if installed
-    if "wandb" in training_args.report_to and find_spec("wandb") is not None:
-        os.environ["WANDB_PROJECT"] = "QA_Beavertails_" + model_args.model_name_or_path.split("/")[-1]
-        os.environ["WANDB_LOG"] = "false"
-        os.environ["WANDB_WATCH"] = "false"
-        os.environ["WANDB_NAME"] = training_args.run_name
-    else:
-        logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
+    if training_args.report_to is not None:
+        # Setup wandb if installed
+        if "wandb" in training_args.report_to and find_spec("wandb") is not None:
+            os.environ["WANDB_PROJECT"] = "QA_Beavertails_" + model_args.model_name_or_path.split("/")[-1]
+            os.environ["WANDB_LOG"] = "false"
+            os.environ["WANDB_WATCH"] = "false"
 
-    main(model_args, data_args, training_args)
+            if training_args.run_name is not None:
+                os.environ["WANDB_NAME"] = training_args.run_name
+        else:
+            logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
+
+
+if __name__ == "__main__":
+    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))  # type: ignore
+
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".yaml"):
+        model_args, data_args, training_args = parser.parse_yaml_file(Path(sys.argv[1]).resolve())
+    else:
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    setup_logging(model_args, data_args, training_args)
+    run(model_args, data_args, training_args)
