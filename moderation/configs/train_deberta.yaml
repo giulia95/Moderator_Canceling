@@ -1,12 +1,10 @@
 # Model Arguments
-
 model_name_or_path: "microsoft/deberta-v3-large"
 cls_dropout: 0.15
 trust_remote_code: True
 device_map: "cuda"
 
 # Data Arguments
-
 dataset_name: "saiteki-kai/Beavertails-it"
 config_name: "multilingual"
 train_split: "330k_train"
