@@ -64,26 +64,26 @@ def load_qa_dataset(
 
 def format_prompts(
     example: dict[str, Any],
+    tokenizer: "PreTrainedTokenizer",
     template: str | None = None,
-    tokenizer: "PreTrainedTokenizer | None" = None,
 ) -> dict[str, str]:
-    if template is None and tokenizer is None:
-        msg = "Both template and tokenizer cannot be None."
+    if "prompt" not in example or "response" not in example:
+        msg = "The dataset must contain a 'prompt' and 'response' column."
         raise ValueError(msg)
 
-    if tokenizer is not None and tokenizer.chat_template is not None:
-        # conversational language model
+    if template is not None:
+        # apply the given template
+        text = template.format(question=example["prompt"], answer=example["response"])
+    elif tokenizer.chat_template is not None:
+        # chat template for conversational models
         messages = [
             {"role": "user", "content": example["prompt"]},
             {"role": "assistant", "content": example["response"]},
         ]
         text = tokenizer.apply_chat_template(messages, tokenize=False)
         text = cast("str", text)
-    elif template is not None:
-        # bert-like or other models
-        text = template.format(question=example["prompt"], answer=example["response"])
     else:
-        # default to concatenation
+        # default to concatenation for non-conversational models
         text = example["prompt"] + " " + example["response"]
 
     return {"text": text}
