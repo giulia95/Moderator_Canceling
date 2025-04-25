@@ -22,7 +22,7 @@ from transformers import (
 from transformers.hf_argparser import HfArgumentParser
 
 from arguments import DataArguments, ModelArguments
-from utils import compute_metrics, load_qa_dataset, tokenize
+from utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
     set_seed(training_args.seed)
 
     # Load dataset
-    dataset, labels, label2id, id2label = load_qa_dataset(data_args.dataset_name, template=data_args.template)
+    dataset, labels, label2id, id2label = load_qa_dataset(data_args.dataset_name, config_name=data_args.config_name)
     logger.info("Dataset loaded %s", dataset)
     logger.info("Labels: %s", labels)
     logger.info("Label2id: %s", label2id)
@@ -52,7 +52,9 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
         id2label=id2label,
         label2id=label2id,
     )
-    config.cls_dropout = model_args.cls_dropout
+
+    if getattr(model_args, "cls_dropout", None):
+        config.cls_dropout = model_args.cls_dropout
 
     model = AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path,
@@ -75,6 +77,11 @@ def main(model_args: ModelArguments, data_args: DataArguments, training_args: Tr
 
     # Prepare dataset and splits
     with training_args.main_process_first(desc="dataset map pre-processing"):
+        dataset = dataset.map(
+            partial(format_prompts, tokenizer=tokenizer, template=data_args.template),
+            desc="Formatting prompts using template",
+        )
+
         dataset = dataset.map(
             partial(tokenize, tokenizer=tokenizer, max_length=max_seq_length, padding=data_args.padding),
             batched=True,

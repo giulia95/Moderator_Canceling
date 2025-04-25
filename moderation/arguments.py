@@ -35,6 +35,10 @@ class DataArguments:
         default="PKU-Alignment/Beavertails",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
+    config_name: str = field(
+        default="multilingual",
+        metadata={"help": "The name of the dataset configuration to use."},
+    )
     train_split: str = field(
         default="330k_train",
         metadata={"help": "The name of the train split to use."},
@@ -61,8 +65,8 @@ class DataArguments:
             "If False, will pad the samples dynamically when batching to the maximum length in the batch."
         },
     )
-    template: str = field(
-        default="Question: {question}\n\nAnswer: {answer}",
+    template: str | None = field(
+        default=None,
         metadata={"help": "The prompt template."},
     )
     padding: bool | str = field(init=False)

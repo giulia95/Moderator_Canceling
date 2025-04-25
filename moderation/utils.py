@@ -18,7 +18,6 @@ def load_qa_dataset(  # type: ignore
     dataset_name: str,
     split: None = None,
     config_name: str | None = None,
-    template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["DatasetDict", list[str], dict[str, int], dict[int, str]]: ...
 
 
@@ -27,7 +26,6 @@ def load_qa_dataset(  # type: ignore
     dataset_name: str,
     split: str,
     config_name: str | None = None,
-    template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["Dataset", list[str], dict[str, int], dict[int, str]]: ...
 
 
@@ -35,7 +33,6 @@ def load_qa_dataset(
     dataset_name: str,
     split: str | None = None,
     config_name: str | None = None,
-    template: str = "Question: {question} Answer: {answer}",
 ) -> tuple["Dataset | DatasetDict", list[str], dict[str, int], dict[int, str]]:
     dataset = load_dataset(dataset_name, name=config_name, split=split)
     categories: list[dict[str, bool]]
@@ -51,9 +48,6 @@ def load_qa_dataset(
     id2label = dict(enumerate(labels))
     label2id = {label: i for i, label in id2label.items()}
 
-    def format_prompts(example: dict[str, Any]) -> dict[str, str]:
-        return {"text": template.format(question=example["prompt"], answer=example["response"])}
-
     def format_labels(example: dict[str, Any]) -> dict[str, torch.Tensor]:
         multi_hot_vec = torch.zeros(len(label2id), dtype=torch.float32)
 
@@ -63,10 +57,36 @@ def load_qa_dataset(
 
         return {"label": multi_hot_vec}
 
-    dataset = dataset.map(format_prompts, desc="Formatting text using template")
     dataset = dataset.map(format_labels, desc="Formatting labels to multi-hot")
 
     return dataset, labels, label2id, id2label
+
+
+def format_prompts(
+    example: dict[str, Any],
+    template: str | None = None,
+    tokenizer: "PreTrainedTokenizer | None" = None,
+) -> dict[str, str]:
+    if template is None and tokenizer is None:
+        msg = "Both template and tokenizer cannot be None."
+        raise ValueError(msg)
+
+    if tokenizer is not None and tokenizer.chat_template is not None:
+        # conversational language model
+        messages = [
+            {"role": "user", "content": example["prompt"]},
+            {"role": "assistant", "content": example["response"]},
+        ]
+        text = tokenizer.apply_chat_template(messages, tokenize=False)
+        text = cast("str", text)
+    elif template is not None:
+        # bert-like or other models
+        text = template.format(question=example["prompt"], answer=example["response"])
+    else:
+        # default to concatenation
+        text = example["prompt"] + " " + example["response"]
+
+    return {"text": text}
 
 
 def tokenize(
