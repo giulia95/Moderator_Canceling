@@ -94,12 +94,19 @@ def tokenize(
     tokenizer: "PreTrainedTokenizer",
     padding: "bool | str | PaddingStrategy" = "max_length",
     max_length: int | None = None,
+    add_eos_token: bool = False,
 ) -> "BatchEncoding":
     if "text" not in examples:
         msg = "The dataset must contain a 'text' column."
         raise ValueError(msg)
 
-    return tokenizer(examples["text"], padding=padding, max_length=max_length, truncation=True)
+    if tokenizer.eos_token is None or not add_eos_token:
+        texts = examples["text"]
+    else:
+        eos_token = tokenizer.eos_token if isinstance(tokenizer.eos_token, str) else tokenizer.eos_token[0]
+        texts = [text + eos_token if not text.endswith(eos_token) else text for text in examples["text"]]
+
+    return tokenizer(texts, padding=padding, max_length=max_length, truncation=True)
 
 
 def compute_metrics(pred: "EvalPrediction") -> dict:

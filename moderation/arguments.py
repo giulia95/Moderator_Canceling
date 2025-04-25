@@ -11,6 +11,10 @@ class ModelArguments:
         default=0.1,
         metadata={"help": "Dropout probability for the classifier"},
     )
+    add_eos_token: bool = field(
+        default=False,
+        metadata={"help": "Whether to add an end-of-sequence token to the input sequences."},
+    )
     trust_remote_code: bool = field(
         default=False,
         metadata={"help": "Whether or not to allow loading models from a remote repository on the Hub"},
