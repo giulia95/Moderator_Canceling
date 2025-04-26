@@ -79,6 +79,7 @@ def run(
         device_map=model_args.device_map,
         trust_remote_code=model_args.trust_remote_code,
     )
+    model.config.pad_token_id = tokenizer.pad_token_id
 
     max_seq_length = data_args.max_seq_length
 
