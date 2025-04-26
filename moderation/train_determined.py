@@ -38,14 +38,12 @@ if __name__ == "__main__":
 
     setup_logging(model_args, data_args, training_args)
 
-    if info.task_type != "NOTEBOOK":
-        if training_args.deepspeed:
-            distributed = det.core.DistributedContext.from_deepspeed()
-        else:
-            distributed = det.core.DistributedContext.from_torch_distributed()
-
-        with det.core.init(distributed=distributed) as core_context:
-            det_callback = DetCallback(core_context, training_args)
-            run(model_args, data_args, training_args, callbacks=[det_callback])
+    if training_args.deepspeed:
+        distributed = det.core.DistributedContext.from_deepspeed()
     else:
-        run(model_args, data_args, training_args)
+        distributed = det.core.DistributedContext.from_torch_distributed()
+
+    with det.core.init(distributed=distributed) as core_context:
+        det_callback = DetCallback(core_context, training_args)
+
+        run(model_args, data_args, training_args, callbacks=[det_callback])
