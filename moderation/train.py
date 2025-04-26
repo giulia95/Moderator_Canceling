@@ -15,6 +15,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
+    EarlyStoppingCallback,
     Trainer,
     TrainingArguments,
     default_data_collator,
@@ -144,6 +145,8 @@ def run(
     if callbacks is not None:
         for cb in callbacks:
             trainer.add_callback(cb)
+
+    trainer.add_callback(EarlyStoppingCallback(early_stopping_patience=2))
 
     # Training
     train_result = trainer.train()
