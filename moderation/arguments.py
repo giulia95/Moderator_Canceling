@@ -7,8 +7,8 @@ class ModelArguments:
         default="microsoft/deberta-v3-large",
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
-    cls_dropout: float = field(
-        default=0.1,
+    cls_dropout: float | None = field(
+        default=None,
         metadata={"help": "Dropout probability for the classifier"},
     )
     add_eos_token: bool = field(
