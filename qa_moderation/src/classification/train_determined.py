@@ -7,8 +7,8 @@ from determined.transformers import DetCallback
 from transformers import TrainingArguments
 from transformers.hf_argparser import HfArgumentParser
 
-from arguments import DataArguments, ModelArguments
-from train import run, setup_logging
+from classification.arguments import DataArguments, ModelArguments
+from classification.train import run, setup_logging
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"

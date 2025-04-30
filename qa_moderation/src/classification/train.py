@@ -23,8 +23,8 @@ from transformers import (
 )
 from transformers.hf_argparser import HfArgumentParser
 
-from arguments import DataArguments, ModelArguments
-from utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
+from classification.arguments import DataArguments, ModelArguments
+from classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
 
 
 if TYPE_CHECKING:
