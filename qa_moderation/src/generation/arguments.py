@@ -17,7 +17,7 @@ class ModelArguments:
     )
     lora_r: int = field(
         default=16,
-        metadata={"help": "The number of attention heads to use for LoRA."},
+        metadata={"help": "The attention dimension to use for LoRA."},
     )
     lora_alpha: int = field(
         default=32,
@@ -87,9 +87,7 @@ class DataArguments:
     padding: bool | str = field(init=False)
     include_descriptions: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to include descriptions in the prompt. "
-        },
+        metadata={"help": "Whether to include descriptions in the prompt. "},
     )
 
     def __post_init__(self) -> None:
