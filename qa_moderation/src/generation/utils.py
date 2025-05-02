@@ -4,16 +4,29 @@ import warnings
 
 from collections.abc import Callable
 from functools import partial
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import torch
 import wandb
 
+from datasets import DatasetDict, load_dataset
 from tqdm import tqdm
 from transformers import GenerationConfig, PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.integrations import WandbCallback
 
 
 Tokenizer = PreTrainedTokenizer | PreTrainedTokenizerFast
+
+if TYPE_CHECKING:
+    from datasets import Dataset
+    from transformers import (
+        BatchEncoding,
+        PreTrainedModel,
+        Trainer,
+        TrainerControl,
+        TrainerState,
+        TrainingArguments,
+    )
 
 
 CATEGORY_SECTION_RE = re.compile("(<BEGIN UNSAFE CONTENT CATEGORIES>).*?(<END UNSAFE CONTENT CATEGORIES>)", re.DOTALL)
@@ -142,12 +155,67 @@ def category_map_to_list(categories: dict[str, bool]) -> list[str]:
     return [CATEGORY_TO_ID[c] for c, v in categories.items() if v]
 
 
+@overload
+def load_qa_dataset(  # type: ignore
+    dataset_name: str,
+    split: None = None,
+    config_name: str | None = None,
+) -> tuple["DatasetDict", list[str]]: ...
+
+
+@overload
+def load_qa_dataset(  # type: ignore
+    dataset_name: str,
+    split: str,
+    config_name: str | None = None,
+) -> tuple["Dataset", list[str]]: ...
+
+
+def load_qa_dataset(
+    dataset_name: str,
+    split: str | None = None,
+    config_name: str | None = None,
+) -> tuple["Dataset | DatasetDict", list[str]]:
+    dataset = load_dataset(dataset_name, name=config_name, split=split)
+    categories: list[dict[str, bool]]
+
+    if isinstance(dataset, DatasetDict):
+        splits = list(dataset.keys())
+        categories = dataset[splits[0]]["category"]
+    else:
+        dataset = cast("Dataset", dataset)
+        categories = dataset["category"]
+
+    labels = list(categories[0].keys())
+
+    return dataset, labels
+
+
 class LLMSampleCB(WandbCallback):
-    def __init__(self, trainer, test_dataset, num_samples=100, max_new_tokens=256, freq=200) -> None:
+    tokenizer: "PreTrainedTokenizer | PreTrainedTokenizerFast"
+    model: "PreTrainedModel"
+    gen_config: GenerationConfig
+    freq: int
+
+    def __init__(
+        self,
+        trainer: "Trainer",
+        test_dataset: "Dataset",
+        num_samples: int = 100,
+        max_new_tokens: int = 256,
+        freq: int = 200,
+    ) -> None:
         "A CallBack to log samples a wandb.Table during training"
         super().__init__()
         self.sample_dataset = test_dataset.select(range(num_samples))
-        self.model, self.tokenizer = trainer.model, trainer.tokenizer
+
+        self.model = cast("PreTrainedModel", trainer.model)
+
+        if trainer.tokenizer is None:
+            msg = "Trainer tokenizer is None"
+            raise ValueError(msg)
+        self.tokenizer = cast("Tokenizer", trainer.tokenizer)
+
         self.freq = freq
         self.gen_config = GenerationConfig(do_sample=False, pad_token_id=0, max_new_tokens=max_new_tokens)
 
@@ -157,15 +225,19 @@ class LLMSampleCB(WandbCallback):
             {"role": "assistant", "content": response},
         ]
         input_prompt = self.tokenizer.apply_chat_template(chat, tokenize=False)
-        tokenized_prompt = self.tokenizer(input_prompt, return_tensors="pt")["input_ids"].cuda()
+        input_prompt = cast("str", input_prompt)
+
+        tokenized_prompt = self.tokenizer(input_prompt, return_tensors="pt")
+        tokenized_prompt = cast("BatchEncoding", tokenized_prompt)
+        input_ids = tokenized_prompt["input_ids"].to(self.model.device)  # type: ignore
 
         with torch.inference_mode():
-            output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
-            generated_ids = output[0][len(tokenized_prompt[0]) :]
+            output = self.model.generate(input_ids, generation_config=self.gen_config)
+            generated_ids = output[0][len(input_ids[0]) :]
 
         return (
             input_prompt,
-            len(tokenized_prompt[0]),
+            len(input_ids[0]),
             len(generated_ids),
             self.tokenizer.decode(generated_ids, skip_special_tokens=False),
         )
@@ -193,10 +265,12 @@ class LLMSampleCB(WandbCallback):
             records_table.add_data(prompt, response, chat_prompt, generation, in_len, out_len, is_safe, category_list)
         return records_table
 
-    def on_evaluate(self, args, state, control, **kwargs) -> None:
+    def on_evaluate(
+        self, args: "TrainingArguments", state: "TrainerState", control: "TrainerControl", **kwargs: Any
+    ) -> None:
         "Log the wandb.Table after calling trainer.evaluate"
         super().on_evaluate(args, state, control, **kwargs)
 
         if state.global_step % self.freq == 0:
-            records_table = self.samples_table(self.sample_dataset)
+            records_table = self.samples_table(self.sample_dataset.to_list())
             self._wandb.log({"sample_predictions": records_table})

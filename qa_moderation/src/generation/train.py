@@ -5,12 +5,11 @@ import typing
 
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, cast, overload
+from typing import TYPE_CHECKING
 
 import torch
 
 from accelerate import PartialState
-from datasets import DatasetDict, load_dataset
 from liger_kernel.transformers import AutoLigerKernelForCausalLM
 from peft import LoraConfig, PeftMixedModel, PeftModel, get_peft_model
 from qa_moderation.src.utils import setup_logging
@@ -26,11 +25,10 @@ from transformers.trainer_utils import get_last_checkpoint
 from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
 from generation.arguments import DataArguments, ModelArguments
-from generation.utils import get_format_prompt_fn, update_chat_template
+from generation.utils import get_format_prompt_fn, load_qa_dataset, update_chat_template
 
 
 if TYPE_CHECKING:
-    from datasets import Dataset
     from transformers import TrainerCallback
 
 
@@ -237,42 +235,6 @@ def load_peft_model(model: PreTrainedModel, lora_args: dict) -> PeftModel | Peft
     )
 
     return get_peft_model(model, peft_config)
-
-
-@overload
-def load_qa_dataset(  # type: ignore
-    dataset_name: str,
-    split: None = None,
-    config_name: str | None = None,
-) -> tuple["DatasetDict", list[str]]: ...
-
-
-@overload
-def load_qa_dataset(  # type: ignore
-    dataset_name: str,
-    split: str,
-    config_name: str | None = None,
-) -> tuple["Dataset", list[str]]: ...
-
-
-def load_qa_dataset(
-    dataset_name: str,
-    split: str | None = None,
-    config_name: str | None = None,
-) -> tuple["Dataset | DatasetDict", list[str]]:
-    dataset = load_dataset(dataset_name, name=config_name, split=split)
-    categories: list[dict[str, bool]]
-
-    if isinstance(dataset, DatasetDict):
-        splits = list(dataset.keys())
-        categories = dataset[splits[0]]["category"]
-    else:
-        dataset = cast("Dataset", dataset)
-        categories = dataset["category"]
-
-    labels = list(categories[0].keys())
-
-    return dataset, labels
 
 
 if __name__ == "__main__":

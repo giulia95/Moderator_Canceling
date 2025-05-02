@@ -5,8 +5,10 @@ import sys
 from importlib.util import find_spec
 
 import datasets
+import numpy as np
 import transformers
 
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from transformers import TrainingArguments
 from transformers.hf_argparser import DataClassType
 
@@ -58,3 +60,38 @@ def setup_logging(
                 os.environ["WANDB_NAME"] = training_args.run_name
         else:
             logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
+
+
+def compute_all_metrics(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, str] | None = None) -> dict:
+    # convert logits to multi-hot vectors (same as using sigmoid with 0.5 threshold)
+    preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
+
+    flagged_labels = labels.any(axis=-1)
+    flagged_predictions = preds.any(axis=-1)
+
+    metrics = {
+        "accuracy": accuracy_score(labels, preds),
+        "macro_f1": f1_score(labels, preds, average="macro"),
+        "macro_precision": precision_score(labels, preds, average="macro"),
+        "macro_recall": recall_score(labels, preds, average="macro"),
+        "micro_f1": f1_score(labels, preds, average="micro"),
+        "micro_precision": precision_score(labels, preds, average="micro"),
+        "micro_recall": recall_score(labels, preds, average="micro"),
+        "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
+        "flagged/precision": precision_score(flagged_labels, flagged_predictions),
+        "flagged/recall": recall_score(flagged_labels, flagged_predictions),
+        "flagged/f1": f1_score(flagged_labels, flagged_predictions),
+    }
+
+    if id2labels is not None:
+        for idx, label in id2labels.items():
+            metrics.update(
+                {
+                    f"{label}/accuracy": accuracy_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/precision": precision_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/recall": recall_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/f1": f1_score(labels[:, idx], preds[:, idx]),
+                }
+            )
+
+    return metrics
