@@ -4,11 +4,12 @@ import os
 import determined as det
 
 from determined.transformers import DetCallback
+from qa_moderation.src.utils import setup_logging
 from transformers import TrainingArguments
 from transformers.hf_argparser import HfArgumentParser
 
 from classification.arguments import DataArguments, ModelArguments
-from classification.train import run, setup_logging
+from classification.train import run
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     training_args.run_name = training_args.run_name + "-" + str(info.trial.trial_id)
     training_args.output_dir = f"output/{training_args.run_name}"
 
-    setup_logging(model_args, data_args, training_args)
+    setup_logging(logger, training_args, model_args, data_args)
 
     if training_args.deepspeed:
         distributed = det.core.DistributedContext.from_deepspeed()
