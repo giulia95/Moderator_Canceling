@@ -77,14 +77,14 @@ class DataArguments:
             "If False, will pad the samples dynamically when batching to the maximum length in the batch."
         },
     )
-    padding: bool | str = field(init=False)
+    padding: str = field(init=False)
     include_descriptions: bool = field(
         default=False,
         metadata={"help": "Whether to include descriptions in the prompt. "},
     )
 
     def __post_init__(self) -> None:
-        self.padding = "max_length" if self.pad_to_max_length else False
+        self.padding = "max_length" if self.pad_to_max_length else "do_not_pad"
 
     def __str__(self) -> str:
         self_as_dict = asdict(self)

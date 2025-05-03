@@ -256,7 +256,6 @@ def tokenize(
         max_length=max_length,
         truncation=True,
         pad_to_multiple_of=8,
-        return_tensors="pt",
         add_special_tokens=False,
     )
 
