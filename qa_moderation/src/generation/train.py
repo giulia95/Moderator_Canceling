@@ -154,7 +154,11 @@ def run(
 
     # Resume from checkpoint if available
     last_checkpoint = None
-    if training_args.output_dir and not training_args.overwrite_output_dir:
+    if (
+        training_args.output_dir is not None
+        and Path(training_args.output_dir).exists()
+        and not training_args.overwrite_output_dir
+    ):
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
 
     checkpoint = None
