@@ -4,7 +4,7 @@ import os
 import determined as det
 
 from determined.transformers import DetCallback
-from transformers import HfArgumentParser
+from transformers import EarlyStoppingCallback, HfArgumentParser
 from trl import SFTConfig
 
 from src.generation.arguments import DataArguments, ModelArguments
@@ -36,12 +36,6 @@ if __name__ == "__main__":
     training_args.run_name = training_args.run_name + "-" + str(info.trial.trial_id)
     training_args.output_dir = f"output/{training_args.run_name}"
 
-    # computed from the input prompt with beavertails taxonomy
-    if data_args.include_descriptions:
-        training_args.max_seq_length = 1400
-    else:
-        training_args.max_seq_length = 800
-
     setup_logging(logger, training_args, model_args, data_args)
 
     if training_args.deepspeed:
@@ -51,5 +45,6 @@ if __name__ == "__main__":
 
     with det.core.init(distributed=distributed) as core_context:
         det_callback = DetCallback(core_context, training_args)
+        early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=3)
 
-        run(model_args, data_args, training_args, callbacks=[det_callback])
+        run(model_args, data_args, training_args, callbacks=[det_callback, early_stopping_callback])
