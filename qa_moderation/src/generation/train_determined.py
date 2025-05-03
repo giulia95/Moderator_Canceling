@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     model_args, data_args, training_args = parser.parse_dict(hparams)
     training_args.run_name = training_args.run_name + "-" + str(info.trial.trial_id)
-    training_args.output_dir = f"output/{training_args.run_name}"
+    training_args.output_dir = training_args.output_dir + "-" + str(info.trial.trial_id)
 
     setup_logging(logger, training_args, model_args, data_args)
 
