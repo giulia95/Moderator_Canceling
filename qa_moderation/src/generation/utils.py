@@ -5,12 +5,13 @@ import warnings
 from typing import TYPE_CHECKING, Any, cast, overload
 
 import torch
-import wandb
 
 from datasets import DatasetDict, load_dataset
 from tqdm import tqdm
 from transformers import GenerationConfig, PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.integrations import WandbCallback
+
+import wandb
 
 
 Tokenizer = PreTrainedTokenizer | PreTrainedTokenizerFast
@@ -139,22 +140,28 @@ def prepare_input(example: dict, model_name: str, tokenizer: Tokenizer) -> str:
     return str(prompt)
 
 
-# def format_prompts(example: dict, model_name_or_path: str, tokenizer: Tokenizer) -> dict[str, str]:
-#     text = prepare_input(example, model_name_or_path, tokenizer) + prepare_output(example) + str(tokenizer.eos_token)
-#
-#     return {"text": text}
-
-
 def format_prompts(
-    example: dict,
-    model_name_or_path: str,
-    tokenizer: Tokenizer,
-    categories: list[str],
+    example: dict, model_name_or_path: str, tokenizer: Tokenizer, categories: list[str]
 ) -> dict[str, str]:
-    return {
-        "prompt": prepare_input(example, model_name_or_path, tokenizer),
-        "completion": prepare_output(example, categories),
-    }
+    text = (
+        prepare_input(example, model_name_or_path, tokenizer)
+        + prepare_output(example, categories)
+        + str(tokenizer.eos_token)
+    )
+
+    return {"text": text}
+
+
+# def format_prompts(
+#     example: dict,
+#     model_name_or_path: str,
+#     tokenizer: Tokenizer,
+#     categories: list[str],
+# ) -> dict[str, str]:
+#     return {
+#         "prompt": prepare_input(example, model_name_or_path, tokenizer),
+#         "completion": prepare_output(example, categories),
+#     }
 
 
 def category_map_to_list(categories: dict[str, bool]) -> list[str]:
@@ -208,7 +215,7 @@ class LLMSampleCB(WandbCallback):
         trainer: "Trainer",
         test_dataset: "Dataset",
         num_samples: int = 100,
-        max_new_tokens: int = 256,
+        max_new_tokens: int = 100,
         freq: int = 200,
     ) -> None:
         "A CallBack to log samples a wandb.Table during training"
@@ -235,15 +242,15 @@ class LLMSampleCB(WandbCallback):
 
         tokenized_prompt = self.tokenizer(input_prompt, return_tensors="pt")
         tokenized_prompt = cast("BatchEncoding", tokenized_prompt)
-        input_ids = tokenized_prompt["input_ids"].to(self.model.device)  # type: ignore
+        inputs = tokenized_prompt.to(self.model.device)  # type: ignore
 
         with torch.inference_mode():
-            output = self.model.generate(input_ids, generation_config=self.gen_config)
-            generated_ids = output[0][len(input_ids[0]) :]
+            output = self.model.generate(**inputs, generation_config=self.gen_config)
+            generated_ids = output[0][len(inputs.input_ids[0]) :]
 
         return (
             input_prompt,
-            len(input_ids[0]),
+            len(inputs.input_ids[0]),
             len(generated_ids),
             self.tokenizer.decode(generated_ids, skip_special_tokens=False),
         )

@@ -29,7 +29,7 @@ from src.utils import setup_logging
 
 
 if TYPE_CHECKING:
-    from transformers import TrainerCallback
+    from transformers import BatchEncoding, TrainerCallback
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -87,22 +87,22 @@ def run(
                 tokenizer=tokenizer,
                 categories=labels,
             ),
-            desc="Formatting prompts using template",
+            desc="Formatting prompts using chat template",
         )
 
         logger.debug("Dataset after formatting: %s", dataset)
         logger.debug("Example after formatting: %s", dataset[data_args.test_split][0])
 
-        # dataset = dataset.map(
-        #     partial(
-        #         tokenize,
-        #         tokenizer=tokenizer,
-        #         max_length=max_seq_length,
-        #         padding=data_args.padding,
-        #     ),
-        #     batched=True,
-        #     desc="Tokenize dataset",
-        # )
+        dataset = dataset.map(
+            partial(
+                tokenize,
+                tokenizer=tokenizer,
+                max_length=max_seq_length,
+                padding=data_args.padding,
+            ),
+            batched=True,
+            desc="Tokenize dataset",
+        )
 
         data_partition = dataset[data_args.train_split].train_test_split(
             test_size=data_args.eval_split_ratio,
@@ -184,11 +184,12 @@ def run(
 
     # Push to hub
     kwargs = {
-        "finetuned_from": model_args.model_name_or_path,
+        # "model_name": training_args.run_name,
+        # "finetuned_from": model_args.model_name_or_path,
         "tags": ["question-answering", "text-generation"],
-        "tasks": "text-generation",
-        "dataset": data_args.dataset_name,
-        "dataset_tags": "beavertails",
+        # "tasks": "text-generation",
+        "dataset_name": data_args.dataset_name,
+        # "dataset_tags": "beavertails",
     }
 
     if training_args.push_to_hub:
@@ -242,6 +243,23 @@ def load_peft_model(model: PreTrainedModel, lora_args: dict) -> PeftModel | Peft
     return get_peft_model(model, peft_config)
 
 
+def tokenize(
+    examples: dict,
+    tokenizer: PreTrainedTokenizer,
+    padding: str | None = None,
+    max_length: int | None = None,
+) -> "BatchEncoding":
+    return tokenizer(
+        examples["text"],
+        padding=padding,
+        max_length=max_length,
+        truncation=True,
+        pad_to_multiple_of=8,
+        return_tensors="pt",
+        add_special_tokens=False,
+    )
+
+
 if __name__ == "__main__":
     parser = HfArgumentParser((ModelArguments, DataArguments, SFTConfig))  # type: ignore
 
@@ -249,12 +267,6 @@ if __name__ == "__main__":
         model_args, data_args, training_args = parser.parse_yaml_file(Path(sys.argv[1]).resolve())
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
-    # computed from the input prompt with beavertails taxonomy
-    if data_args.include_descriptions:
-        training_args.max_seq_length = 1400
-    else:
-        training_args.max_seq_length = 800
 
     setup_logging(logger, training_args, model_args, data_args)
     run(model_args, data_args, training_args)
