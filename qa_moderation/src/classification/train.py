@@ -6,7 +6,6 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from qa_moderation.src.utils import setup_logging
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -20,8 +19,9 @@ from transformers import (
 )
 from transformers.hf_argparser import HfArgumentParser
 
-from classification.arguments import DataArguments, ModelArguments
-from classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
+from src.classification.arguments import DataArguments, ModelArguments
+from src.classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
+from src.utils import setup_logging
 
 
 if TYPE_CHECKING:

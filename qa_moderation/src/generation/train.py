@@ -12,7 +12,6 @@ import torch
 from accelerate import PartialState
 from liger_kernel.transformers import AutoLigerKernelForCausalLM
 from peft import LoraConfig, PeftMixedModel, PeftModel, get_peft_model
-from qa_moderation.src.utils import setup_logging
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -24,8 +23,9 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
-from generation.arguments import DataArguments, ModelArguments
-from generation.utils import get_format_prompt_fn, load_qa_dataset, update_chat_template
+from src.generation.arguments import DataArguments, ModelArguments
+from src.generation.utils import get_format_prompt_fn, load_qa_dataset, update_chat_template
+from src.utils import setup_logging
 
 
 if TYPE_CHECKING:

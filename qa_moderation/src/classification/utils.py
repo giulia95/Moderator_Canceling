@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Any, cast, overload
 import torch
 
 from datasets import DatasetDict, load_dataset
-from qa_moderation.src.utils import compute_all_metrics
+
+from src.utils import compute_all_metrics
 
 
 if TYPE_CHECKING:

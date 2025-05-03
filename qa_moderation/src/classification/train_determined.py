@@ -4,12 +4,12 @@ import os
 import determined as det
 
 from determined.transformers import DetCallback
-from qa_moderation.src.utils import setup_logging
 from transformers import TrainingArguments
 from transformers.hf_argparser import HfArgumentParser
 
-from classification.arguments import DataArguments, ModelArguments
-from classification.train import run
+from src.classification.arguments import DataArguments, ModelArguments
+from src.classification.train import run
+from src.utils import setup_logging
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
