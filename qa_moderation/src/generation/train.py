@@ -58,9 +58,9 @@ def run(
     logger.info("Chat template: %s", tokenizer.chat_template)
     logger.info("Model config: %s", model.config)
 
-    max_seq_length = data_args.max_seq_length
+    max_seq_length = training_args.max_seq_length
 
-    if max_seq_length > tokenizer.model_max_length:
+    if max_seq_length and max_seq_length > tokenizer.model_max_length:
         logger.warning(
             "The max_seq_length (%d) is larger than the maximum length for the model (%d). Using max_seq_length=%d.",
             max_seq_length,
@@ -68,7 +68,7 @@ def run(
             tokenizer.model_max_length,
         )
 
-    max_seq_length = min(max_seq_length, tokenizer.model_max_length)
+    max_seq_length = min(max_seq_length or torch.inf, tokenizer.model_max_length)
 
     lora_args = {
         "lora_r": model_args.lora_r,

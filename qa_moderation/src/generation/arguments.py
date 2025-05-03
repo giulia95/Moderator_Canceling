@@ -70,13 +70,6 @@ class DataArguments:
         default=0.1,
         metadata={"help": "The ratio of the test split to use for evaluation."},
     )
-    max_seq_length: int = field(
-        default=1024,
-        metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded."
-        },
-    )
     pad_to_max_length: bool = field(
         default=False,
         metadata={

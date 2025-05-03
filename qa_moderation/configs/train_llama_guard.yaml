@@ -14,7 +14,6 @@ config_name: "multilingual"
 train_split: "330k_train"
 test_split: "330k_test"
 eval_split_ratio: 0.1
-max_seq_length: 800
 pad_to_max_length: False
 include_descriptions: false
 
