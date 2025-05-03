@@ -2,8 +2,6 @@ import random
 import re
 import warnings
 
-from collections.abc import Callable
-from functools import partial
 from typing import TYPE_CHECKING, Any, cast, overload
 
 import torch
@@ -97,14 +95,14 @@ def update_chat_template(tokenizer: PreTrainedTokenizer, descriptions: bool = Tr
     tokenizer.chat_template = replace_categories(str(tokenizer.chat_template), descriptions, try_match_order=False)
 
 
-def prepare_output(example: dict, shuffle_categories: bool = False) -> str:
+def prepare_output(example: dict, categories: list[str], shuffle_categories: bool = False) -> str:
     output_prompt = "\n\n"
 
     if example["is_safe"] is True:
         output_prompt += "safe"
     else:
         output_prompt += "unsafe\n"
-        category_list = [CATEGORY_TO_ID[k] for k, v in example["category"].items() if v is True]
+        category_list = [CATEGORY_TO_ID[k] for k in categories if example["category"][k] is True]
 
         if shuffle_categories:
             # shuffle categories to avoid bias?
@@ -141,14 +139,22 @@ def prepare_input(example: dict, model_name: str, tokenizer: Tokenizer) -> str:
     return str(prompt)
 
 
-def format_prompts(example: dict, model_name_or_path: str, tokenizer: Tokenizer) -> dict[str, str]:
-    text = prepare_input(example, model_name_or_path, tokenizer) + prepare_output(example) + str(tokenizer.eos_token)
+# def format_prompts(example: dict, model_name_or_path: str, tokenizer: Tokenizer) -> dict[str, str]:
+#     text = prepare_input(example, model_name_or_path, tokenizer) + prepare_output(example) + str(tokenizer.eos_token)
+#
+#     return {"text": text}
 
-    return {"text": text}
 
-
-def get_format_prompt_fn(model_name_or_path: str, tokenizer: Tokenizer) -> Callable[[dict], dict]:
-    return partial(format_prompts, model_name_or_path=model_name_or_path, tokenizer=tokenizer)
+def format_prompts(
+    example: dict,
+    model_name_or_path: str,
+    tokenizer: Tokenizer,
+    categories: list[str],
+) -> dict[str, str]:
+    return {
+        "prompt": prepare_input(example, model_name_or_path, tokenizer),
+        "completion": prepare_output(example, categories),
+    }
 
 
 def category_map_to_list(categories: dict[str, bool]) -> list[str]:

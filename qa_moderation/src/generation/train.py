@@ -24,7 +24,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
 from src.generation.arguments import DataArguments, ModelArguments
-from src.generation.utils import get_format_prompt_fn, load_qa_dataset, update_chat_template
+from src.generation.utils import format_prompts, load_qa_dataset, update_chat_template
 from src.utils import setup_logging
 
 
@@ -81,12 +81,17 @@ def run(
     # Prepare dataset and splits
     with training_args.main_process_first(desc="dataset map pre-processing"):
         dataset = dataset.map(
-            partial(get_format_prompt_fn, tokenizer=tokenizer),
+            partial(
+                format_prompts,
+                model_name_or_path=model_args.model_name_or_path,
+                tokenizer=tokenizer,
+                categories=labels,
+            ),
             desc="Formatting prompts using template",
         )
 
         logger.debug("Dataset after formatting: %s", dataset)
-        logger.debug("Example after formatting: %s", dataset[0])
+        logger.debug("Example after formatting: %s", dataset[data_args.test_split][0])
 
         # dataset = dataset.map(
         #     partial(
