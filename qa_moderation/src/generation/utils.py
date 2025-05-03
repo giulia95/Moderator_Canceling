@@ -245,7 +245,7 @@ class LLMSampleCB(WandbCallback):
         inputs = tokenized_prompt.to(self.model.device)  # type: ignore
 
         with torch.inference_mode():
-            output = self.model.generate(**inputs, generation_config=self.gen_config)
+            output = self.model.generate(inputs.input_ids, generation_config=self.gen_config)
             generated_ids = output[0][len(inputs.input_ids[0]) :]
 
         return (

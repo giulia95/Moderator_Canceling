@@ -20,6 +20,7 @@ from transformers import (
     PreTrainedTokenizer,
     set_seed,
 )
+from transformers.tokenization_utils import PaddingStrategy
 from transformers.trainer_utils import get_last_checkpoint
 from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
@@ -68,7 +69,7 @@ def run(
             tokenizer.model_max_length,
         )
 
-    max_seq_length = min(max_seq_length or torch.inf, tokenizer.model_max_length)
+    max_seq_length = min(max_seq_length or tokenizer.model_max_length, tokenizer.model_max_length)
 
     lora_args = {
         "lora_r": model_args.lora_r,
@@ -246,7 +247,7 @@ def load_peft_model(model: PreTrainedModel, lora_args: dict) -> PeftModel | Peft
 def tokenize(
     examples: dict,
     tokenizer: PreTrainedTokenizer,
-    padding: str | None = None,
+    padding: "str | bool | PaddingStrategy" = PaddingStrategy.DO_NOT_PAD,
     max_length: int | None = None,
 ) -> "BatchEncoding":
     return tokenizer(
