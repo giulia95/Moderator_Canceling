@@ -32,20 +32,20 @@ if TYPE_CHECKING:
 CATEGORY_SECTION_RE = re.compile("(<BEGIN UNSAFE CONTENT CATEGORIES>).*?(<END UNSAFE CONTENT CATEGORIES>)", re.DOTALL)
 
 CATEGORY_TO_ID = {
-    "violence,aiding_and_abetting,incitement": "S1",
-    "financial_crime,property_crime,theft": "S2",
-    "discrimination,stereotype,injustice": "S3",
-    "child_abuse": "S4",
-    "non_violent_unethical_behavior": "S5",
-    "misinformation_regarding_ethics,laws_and_safety": "S6",
-    "privacy_violation": "S7",
-    "animal_abuse": "S8",
-    "drug_abuse,weapons,banned_substance": "S9",
-    "hate_speech,offensive_language": "S10",
+    "violence,aiding_and_abetting,incitement": "S14",
+    "financial_crime,property_crime,theft": "S6",
+    "discrimination,stereotype,injustice": "S4",
+    "child_abuse": "S2",
+    "non_violent_unethical_behavior": "S9",
+    "misinformation_regarding_ethics,laws_and_safety": "S8",
+    "privacy_violation": "S10",
+    "animal_abuse": "S1",
+    "drug_abuse,weapons,banned_substance": "S5",
+    "hate_speech,offensive_language": "S7",
     "self_harm": "S11",
     "sexually_explicit,adult_content": "S12",
-    "controversial_topics,politics": "S13",
-    "terrorism,organized_crime": "S14",
+    "controversial_topics,politics": "S3",
+    "terrorism,organized_crime": "S13",
 }
 
 CATEGORIES = {
