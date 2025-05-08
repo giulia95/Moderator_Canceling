@@ -6,9 +6,9 @@ import determined as det
 from determined.transformers import DetCallback
 from transformers import EarlyStoppingCallback, HfArgumentParser
 
-from src.classification.train import run as run_classification
-from src.generation.train import run as run_generation
-from src.utils import setup_logging
+from moderation.classification.train import run as run_classification
+from moderation.generation.train import run as run_generation
+from moderation.utils import setup_logging
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -32,12 +32,12 @@ def main() -> None:
 
     if task == "classification":
         from transformers import TrainingArguments  # noqa: I001
-        from src.classification.arguments import DataArguments, ModelArguments
+        from moderation.classification.arguments import DataArguments, ModelArguments
 
         parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))  # type: ignore
     else:
         from trl import SFTConfig  # noqa: I001
-        from src.generation.arguments import DataArguments, ModelArguments
+        from moderation.generation.arguments import DataArguments, ModelArguments
 
         parser = HfArgumentParser((ModelArguments, DataArguments, SFTConfig))  # type: ignore
 

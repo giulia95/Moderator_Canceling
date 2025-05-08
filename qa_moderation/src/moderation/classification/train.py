@@ -19,9 +19,9 @@ from transformers import (
 )
 from transformers.hf_argparser import HfArgumentParser
 
-from src.classification.arguments import DataArguments, ModelArguments
-from src.classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
-from src.utils import setup_logging
+from moderation.classification.arguments import DataArguments, ModelArguments
+from moderation.classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
+from moderation.utils import setup_logging
 
 
 if TYPE_CHECKING:

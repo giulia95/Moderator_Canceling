@@ -24,9 +24,9 @@ from transformers.tokenization_utils import PaddingStrategy
 from transformers.trainer_utils import get_last_checkpoint
 from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
-from src.generation.arguments import DataArguments, ModelArguments
-from src.generation.utils import format_prompts, load_qa_dataset, update_chat_template
-from src.utils import setup_logging
+from moderation.generation.arguments import DataArguments, ModelArguments
+from moderation.generation.utils import format_prompts, load_qa_dataset, update_chat_template
+from moderation.utils import setup_logging
 
 
 if TYPE_CHECKING:

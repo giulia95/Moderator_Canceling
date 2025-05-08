@@ -4,7 +4,7 @@ import torch
 
 from datasets import DatasetDict, load_dataset
 
-from src.utils import compute_all_metrics
+from moderation.utils import compute_all_metrics
 
 
 if TYPE_CHECKING:
