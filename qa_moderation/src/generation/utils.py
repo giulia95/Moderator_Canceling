@@ -65,20 +65,26 @@ CATEGORIES = {
 }
 
 
-def replace_categories(chat_template: str, descriptions: bool = True, try_match_order: bool = False) -> str:
-    """Update chat template with new categories"""
-    category_list = "\n"
-
+def get_categories(try_match_order: bool = False, descriptions: bool = False) -> dict[str, str]:
     if try_match_order:
         categories = {f"S{i + 1}": c for i, c in enumerate(CATEGORIES.values())}
     else:
         categories = dict(sorted(CATEGORIES.items(), key=lambda x: int(x[0][1:])))
 
+    if not descriptions:
+        categories = {k: v.split("\n")[0] for k, v in categories.items()}
+
+    return categories
+
+
+def replace_categories(chat_template: str, descriptions: bool = True, try_match_order: bool = False) -> str:
+    """Update chat template with new categories"""
+    category_list = "\n"
+
+    categories = get_categories(try_match_order, descriptions)
+
     for k, v in categories.items():
-        if descriptions:
-            category_list += k + ": " + v + "\n"
-        else:
-            category_list += k + ": " + v.split("\n")[0] + ".\n"
+        category_list += k + ": " + v + "\n"
 
     new_chat_template = CATEGORY_SECTION_RE.sub(rf"\1{category_list}\2", chat_template)
 
@@ -115,7 +121,7 @@ def prepare_output(example: dict, categories: list[str], shuffle_categories: boo
 
 
 def prepare_input(example: dict, model_name: str, tokenizer: Tokenizer) -> str:
-    if model_name == "meta-llama/Llama-Guard-3-1B":
+    if model_name == "meta-llama/Llama-Guard-3-1B" or model_name == "meta-llama/Llama-Guard-4-12B":
         conversation = [
             {
                 "role": "user",
@@ -135,7 +141,8 @@ def prepare_input(example: dict, model_name: str, tokenizer: Tokenizer) -> str:
         msg = f"Model {model_name} not supported"
         raise ValueError(msg)
 
-    prompt = tokenizer.apply_chat_template(conversation, tokenize=False)
+    categories = get_categories()
+    prompt = tokenizer.apply_chat_template(conversation, tokenize=False, categories=categories)
 
     return str(prompt)
 
