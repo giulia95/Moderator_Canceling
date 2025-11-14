@@ -8,7 +8,7 @@ import datasets
 import numpy as np
 import transformers
 
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_curve, precision_score, recall_score
 from transformers import TrainingArguments
 from transformers.hf_argparser import DataClassType
 
@@ -62,9 +62,23 @@ def setup_logging(
             logger.warning("wandb not installed. Install with `pip install wandb` to enable logging to wandb")
 
 
-def compute_all_metrics(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, str] | None = None) -> dict:
-    # convert logits to multi-hot vectors (same as using sigmoid with 0.5 threshold)
-    preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
+def sigmoid(x: np.ndarray) -> np.ndarray:
+    return 1 / (1 + np.exp(-x))
+
+
+def compute_all_metrics(
+    preds: np.ndarray,
+    labels: np.ndarray,
+    id2labels: dict[int, str] | None = None,
+    threshold_tuning: bool = False,
+) -> dict:
+    if threshold_tuning and id2labels is not None:
+        # find best thresholds for each label
+        thresholds = tune_thresholds(preds, labels, id2labels)
+        preds = np.asarray([np.where(sigmoid(p) >= thresholds, 1, 0) for p in preds])
+    else:
+        # convert logits to multi-hot vectors (same as using sigmoid with 0.5 threshold)
+        preds = np.asarray([np.where(p > 0, 1, 0) for p in preds])
 
     flagged_labels = labels.any(axis=-1)
     flagged_predictions = preds.any(axis=-1)
@@ -91,7 +105,23 @@ def compute_all_metrics(preds: np.ndarray, labels: np.ndarray, id2labels: dict[i
                     f"{label}/precision": precision_score(labels[:, idx], preds[:, idx]),
                     f"{label}/recall": recall_score(labels[:, idx], preds[:, idx]),
                     f"{label}/f1": f1_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/threshold": float(thresholds[idx]) if threshold_tuning else 0.5,
                 }
             )
 
     return metrics
+
+
+def tune_thresholds(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, str]) -> np.ndarray:
+    thresholds = np.zeros(len(id2labels))
+
+    for idx in id2labels:
+        y_true = labels[:, idx]
+        y_pred = sigmoid(preds[:, idx])
+
+        precision, recall, thresh = precision_recall_curve(y_true, y_pred)
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
+        best_thresh = thresh[np.argmax(f1)]
+        thresholds[idx] = best_thresh
+
+    return thresholds
