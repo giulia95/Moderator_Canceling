@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config-name", type=str, required=False)
     parser.add_argument("--predictions-filepath", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--thresholds", type=float, nargs="+", default=None)
 
     return parser.parse_args()
 
@@ -54,19 +55,19 @@ def compute_metrics(args: argparse.Namespace) -> None:
         en_labels = all_labels[eng_idx:]
 
         # run on italian dataset
-        it_metrics = compute_all_metrics(it_preds, it_labels, id2labels=id2labels)
+        it_metrics = compute_all_metrics(it_preds, it_labels, id2labels=id2labels, thresholds=args.thresholds)
 
         with Path(f"{base_filename}_italian.json").open("w") as f:
             json.dump(it_metrics, f, indent=2)
 
         # run on english dataset
-        en_metrics = compute_all_metrics(en_preds, en_labels, id2labels=id2labels)
+        en_metrics = compute_all_metrics(en_preds, en_labels, id2labels=id2labels, thresholds=args.thresholds)
 
         with Path(f"{base_filename}_english.json").open("w") as f:
             json.dump(en_metrics, f, indent=2)
 
     # run on both datasets
-    metrics = compute_all_metrics(all_preds, all_labels, id2labels=id2labels)
+    metrics = compute_all_metrics(all_preds, all_labels, id2labels=id2labels, thresholds=args.thresholds)
 
     with Path(f"{base_filename}_all.json").open("w") as f:
         json.dump(metrics, f, indent=2)

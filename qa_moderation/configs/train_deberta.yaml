@@ -13,6 +13,7 @@ eval_split_ratio: 0.1
 max_seq_length: 512
 pad_to_max_length: False
 template: "{question} {answer}"
+tune_thresholds: True
 
 # Training Arguments
 seed: 42

@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, cast, overload
 
 import torch
 
 from datasets import DatasetDict, load_dataset
 
-from moderation.utils import compute_all_metrics
+from moderation.utils import compute_all_metrics, tune_thresholds
 
 
 if TYPE_CHECKING:
@@ -113,4 +113,19 @@ def compute_metrics(pred: "EvalPrediction") -> dict:
     preds = pred.predictions[0] if isinstance(pred.predictions, tuple) else pred.predictions
     labels = pred.label_ids[0] if isinstance(pred.label_ids, tuple) else pred.label_ids
 
+    preds = torch.sigmoid(torch.tensor(preds)).numpy()
+
     return compute_all_metrics(preds, labels)
+
+
+def compute_metrics_with_threshold_tuning(id2labels: dict[int, str]) -> Callable[["EvalPrediction"], dict]:
+    def _compute_metrics(pred: "EvalPrediction") -> dict:
+        preds = pred.predictions[0] if isinstance(pred.predictions, tuple) else pred.predictions
+        labels = pred.label_ids[0] if isinstance(pred.label_ids, tuple) else pred.label_ids
+
+        preds = torch.sigmoid(torch.tensor(preds)).numpy()
+        thresholds = tune_thresholds(preds, labels, id2labels)
+
+        return compute_all_metrics(preds, labels, id2labels=id2labels, thresholds=thresholds)
+
+    return _compute_metrics

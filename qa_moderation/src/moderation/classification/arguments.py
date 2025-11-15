@@ -74,6 +74,10 @@ class DataArguments:
         metadata={"help": "The prompt template."},
     )
     padding: bool | str = field(init=False)
+    tune_thresholds: bool = field(
+        default=False,
+        metadata={"help": "Whether to tune thresholds for each label."},
+    )
 
     def __post_init__(self) -> None:
         self.padding = "max_length" if self.pad_to_max_length else False

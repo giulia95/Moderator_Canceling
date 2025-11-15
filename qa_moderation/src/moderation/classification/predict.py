@@ -46,7 +46,7 @@ def compute_predictions(args: argparse.Namespace) -> None:
     )
 
     # compute predictions
-    predictions = torch.zeros(len(dataset), len(labels), dtype=torch.bool)
+    predictions = torch.zeros(len(dataset), len(labels), dtype=torch.float64)
 
     with torch.inference_mode():
         for i, example in enumerate(tqdm(dataset.to_iterable_dataset(), total=len(dataset))):
@@ -59,9 +59,9 @@ def compute_predictions(args: argparse.Namespace) -> None:
             )
             outputs = model(**inputs.to(model.device))
             logits = outputs.logits[0].detach()
-            predictions[i, :] = logits > 0
+            predictions[i, :] = torch.sigmoid(logits)
 
-    predictions = predictions.to(torch.int).detach().cpu().numpy()
+    predictions = predictions.detach().cpu().numpy()
 
     # save predictions
     filepath = Path(args.out_filepath)

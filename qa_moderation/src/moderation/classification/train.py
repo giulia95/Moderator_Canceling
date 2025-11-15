@@ -20,7 +20,13 @@ from transformers import (
 from transformers.hf_argparser import HfArgumentParser
 
 from moderation.classification.arguments import DataArguments, ModelArguments
-from moderation.classification.utils import compute_metrics, format_prompts, load_qa_dataset, tokenize
+from moderation.classification.utils import (
+    compute_metrics,
+    compute_metrics_with_threshold_tuning,
+    format_prompts,
+    load_qa_dataset,
+    tokenize,
+)
 from moderation.utils import setup_logging
 
 
@@ -130,13 +136,17 @@ def run(
     else:
         data_collator = None
 
+    compute_metrics_fn = (
+        compute_metrics if not data_args.tune_thresholds else compute_metrics_with_threshold_tuning(id2label)
+    )
+
     trainer = Trainer(
         model=model,
         args=training_args,
         processing_class=tokenizer,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        compute_metrics=compute_metrics,
+        compute_metrics=compute_metrics_fn,
         data_collator=data_collator,
     )
 
