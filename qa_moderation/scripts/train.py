@@ -26,7 +26,7 @@ def main() -> None:
         logger.error("Config file not found: %s", config_path)
         sys.exit(1)
 
-    if args.mode == "classification":
+    if args.task == "classification":
         from transformers import TrainingArguments  # noqa: I001
         from moderation.classification.arguments import DataArguments, ModelArguments
 
@@ -40,7 +40,7 @@ def main() -> None:
     model_args, data_args, training_args = parser.parse_yaml_file(config_path)
     setup_logging(logger, training_args, model_args, data_args)
 
-    if args.mode == "classification":
+    if args.task == "classification":
         run_classification(model_args, data_args, training_args)
     else:
         run_generation(model_args, data_args, training_args)
