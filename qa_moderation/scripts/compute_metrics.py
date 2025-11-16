@@ -37,7 +37,7 @@ def compute_metrics(args: argparse.Namespace) -> None:
     id2labels = dict(enumerate(labels))
 
     # load the predictions
-    predictions = torch.load(args.predictions_filepath)
+    predictions = np.load(args.predictions_filepath)
 
     all_preds = np.asarray(predictions)
     all_labels = np.asarray(dataset["label"])

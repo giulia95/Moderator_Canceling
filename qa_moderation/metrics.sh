@@ -15,13 +15,13 @@ models=(
 
 predictions_path() {
     model="$1"
-    echo "./output/predictions_${model/\//__}.pt"
+    echo "./output/predictions_${model/\//__}.npy"
 }
 
 for model in "${models[@]}"; do
     echo "Computing metrics for $model"
 
-    python compute_metrics.py \
+    python ./scripts/compute_metrics.py \
         --model-name "$model" \
         --dataset-name "$dataset" \
         --split "$split" \
