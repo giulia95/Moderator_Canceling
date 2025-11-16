@@ -8,7 +8,15 @@ import datasets
 import numpy as np
 import transformers
 
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_curve, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    auc,
+    confusion_matrix,
+    f1_score,
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+)
 from transformers import TrainingArguments
 from transformers.hf_argparser import DataClassType
 
@@ -76,6 +84,9 @@ def compute_all_metrics(
     flagged_labels = labels.any(axis=-1)
     flagged_predictions = preds.any(axis=-1)
 
+    flagged_precision, flagged_recall, _ = precision_recall_curve(flagged_labels, flagged_predictions)
+    tn, fp, fn, tp = confusion_matrix(flagged_labels, flagged_predictions).ravel()
+
     metrics = {
         "accuracy": accuracy_score(labels, preds),
         "macro_f1": f1_score(labels, preds, average="macro"),
@@ -88,16 +99,21 @@ def compute_all_metrics(
         "flagged/precision": precision_score(flagged_labels, flagged_predictions),
         "flagged/recall": recall_score(flagged_labels, flagged_predictions),
         "flagged/f1": f1_score(flagged_labels, flagged_predictions),
+        "flagged/aucpr": float(auc(flagged_recall, flagged_precision)),
+        "flagged/fpr": float(fp / (fp + tn + 1e-10)),
     }
 
     if id2labels is not None:
         for idx, label in id2labels.items():
+            tn, fp, fn, tp = confusion_matrix(labels[:, idx], preds[:, idx]).ravel()
+
             metrics.update(
                 {
                     f"{label}/accuracy": accuracy_score(labels[:, idx], preds[:, idx]),
                     f"{label}/precision": precision_score(labels[:, idx], preds[:, idx]),
                     f"{label}/recall": recall_score(labels[:, idx], preds[:, idx]),
                     f"{label}/f1": f1_score(labels[:, idx], preds[:, idx]),
+                    f"{label}/fpr": float(fp / (fp + tn + 1e-10)),
                     f"{label}/threshold": float(thresholds[idx]) if thresholds is not None else 0.5,
                 }
             )
