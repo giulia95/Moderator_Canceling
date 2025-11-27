@@ -35,7 +35,10 @@ MODELS: Dict[str, str] = {
     "saiteki-kai/QA-Llama-Guard-3-8B": "Llama Guard 3 8B (FT)",
     "saiteki-kai/QA-Llama-3.1": "Llama 3.1 8B (FT)",
     "saiteki-kai/QA-DeBERTa-v3-large": "DeBERTa v3 large (FT)",
-    "saiteki-kai/QA-DeBERTa-v3-large-threshold": "DeBERTa Threshold (FT)",
+    "saiteki-kai/QA-DeBERTa-v3-large-threshold-v2": "DeBERTa Threshold (FT)",
+    "saiteki-kai/QA-DeBERTa-v3-large-threshold-SEP": "DeBERTa Threshold SEP (FT)",
+    "saiteki-kai/QA-DeBERTa-v3-large-threshold-smoothing-v2": "DeBERTa Threshold 2 (FT)",
+    "saiteki-kai/QA-ModernBERT-large": "ModernBERT (FT)",
 }
 
 # Metrics configuration
