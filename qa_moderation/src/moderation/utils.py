@@ -71,39 +71,40 @@ def setup_logging(
 
 
 def compute_all_metrics(
-    preds: np.ndarray,
+    scores: np.ndarray,
     labels: np.ndarray,
     id2labels: dict[int, str] | None = None,
-    thresholds: np.ndarray | None = None,
+    thresholds: np.ndarray | float | None = None,
 ) -> dict:
-    if thresholds is not None and id2labels is not None:
-        preds = np.asarray([np.where(p > thresholds, 1, 0) for p in preds])
+    """scores: logits after softmax or sigmoid if id2labels is not None"""
+    if thresholds is not None:
+        preds = np.asarray([np.where(p > thresholds, 1, 0) for p in scores])
     else:
-        preds = np.asarray([np.where(p > 0.5, 1, 0) for p in preds])
-
-    flagged_labels = labels.any(axis=-1)
-    flagged_predictions = preds.any(axis=-1)
-
-    flagged_precision, flagged_recall, _ = precision_recall_curve(flagged_labels, flagged_predictions)
-    tn, fp, fn, tp = confusion_matrix(flagged_labels, flagged_predictions).ravel()
-
-    metrics = {
-        "accuracy": accuracy_score(labels, preds),
-        "macro_f1": f1_score(labels, preds, average="macro"),
-        "macro_precision": precision_score(labels, preds, average="macro"),
-        "macro_recall": recall_score(labels, preds, average="macro"),
-        "micro_f1": f1_score(labels, preds, average="micro"),
-        "micro_precision": precision_score(labels, preds, average="micro"),
-        "micro_recall": recall_score(labels, preds, average="micro"),
-        "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
-        "flagged/precision": precision_score(flagged_labels, flagged_predictions),
-        "flagged/recall": recall_score(flagged_labels, flagged_predictions),
-        "flagged/f1": f1_score(flagged_labels, flagged_predictions),
-        "flagged/aucpr": float(auc(flagged_recall, flagged_precision)),
-        "flagged/fpr": float(fp / (fp + tn + 1e-10)),
-    }
+        preds = np.asarray([np.where(p > 0.5, 1, 0) for p in scores])
 
     if id2labels is not None:
+        flagged_labels = labels.any(axis=-1)
+        flagged_predictions = preds.any(axis=-1)
+
+        flagged_precision, flagged_recall, _ = precision_recall_curve(flagged_labels, flagged_predictions)
+        tn, fp, fn, tp = confusion_matrix(flagged_labels, flagged_predictions).ravel()
+
+        metrics = {
+            "accuracy": accuracy_score(labels, preds),
+            "macro_f1": f1_score(labels, preds, average="macro"),
+            "macro_precision": precision_score(labels, preds, average="macro"),
+            "macro_recall": recall_score(labels, preds, average="macro"),
+            "micro_f1": f1_score(labels, preds, average="micro"),
+            "micro_precision": precision_score(labels, preds, average="micro"),
+            "micro_recall": recall_score(labels, preds, average="micro"),
+            "flagged/accuracy": accuracy_score(flagged_labels, flagged_predictions),
+            "flagged/precision": precision_score(flagged_labels, flagged_predictions),
+            "flagged/recall": recall_score(flagged_labels, flagged_predictions),
+            "flagged/f1": f1_score(flagged_labels, flagged_predictions),
+            "flagged/aucpr": float(auc(flagged_recall, flagged_precision)),
+            "flagged/fpr": float(fp / (fp + tn + 1e-10)),
+        }
+
         for idx, label in id2labels.items():
             tn, fp, fn, tp = confusion_matrix(labels[:, idx], preds[:, idx]).ravel()
 
@@ -114,14 +115,62 @@ def compute_all_metrics(
                     f"{label}/recall": recall_score(labels[:, idx], preds[:, idx]),
                     f"{label}/f1": f1_score(labels[:, idx], preds[:, idx]),
                     f"{label}/fpr": float(fp / (fp + tn + 1e-10)),
-                    f"{label}/threshold": float(thresholds[idx]) if thresholds is not None else 0.5,
+                    f"{label}/threshold": float(thresholds[idx]) if isinstance(thresholds, np.ndarray) else 0.5,
                 }
             )
+    else:
+        scores = np.asarray(scores, dtype=np.float32)
+        labels = np.asarray(labels).astype(int)
+
+        positive_probs = scores[:, 1]
+        binary_preds = (positive_probs >= 0.5).astype(int)
+
+        precision_curve, recall_curve, _ = precision_recall_curve(labels, positive_probs)
+        auc_pr = float(auc(recall_curve, precision_curve))
+
+        tn, fp, fn, tp = confusion_matrix(labels, binary_preds, labels=[0, 1]).ravel()
+
+        metrics = {
+            "accuracy": accuracy_score(labels, binary_preds),
+            "unsafe_precision": precision_score(labels, binary_preds, zero_division=0),
+            "unsafe_recall": recall_score(labels, binary_preds, zero_division=0),
+            "unsafe_f1": f1_score(labels, binary_preds, zero_division=0),
+            "unsafe_fpr": float(fp / (fp + tn + 1e-10)),
+            "unsafe_aucpr": auc_pr,
+        }
+
+        # safe
+        negative_probs = scores[:, 0]
+        labels = 1 - labels
+        binary_preds = (negative_probs > 0.5).astype(int)
+
+        precision_curve, recall_curve, _ = precision_recall_curve(labels, negative_probs)
+        auc_pr = float(auc(recall_curve, precision_curve))
+
+        tn, fp, fn, tp = confusion_matrix(labels, binary_preds, labels=[0, 1]).ravel()
+
+        metrics.update(
+            {
+                "safe_precision": precision_score(labels, binary_preds, zero_division=0),
+                "safe_recall": recall_score(labels, binary_preds, zero_division=0),
+                "safe_f1": f1_score(labels, binary_preds, zero_division=0),
+                "safe_fpr": float(fp / (fp + tn + 1e-10)),
+                "safe_aucpr": auc_pr,
+            }
+        )
 
     return metrics
 
 
-def tune_thresholds(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, str]) -> np.ndarray:
+def tune_thresholds(
+    preds: np.ndarray,
+    labels: np.ndarray,
+    id2labels: dict[int, str],
+    problem_type: str = "multi_label_classification",
+) -> np.ndarray | float:
+    if problem_type == "single_label_classification":
+        return tune_binary_threshold(preds, labels)
+
     thresholds = np.zeros(len(id2labels))
 
     for idx in id2labels:
@@ -134,3 +183,10 @@ def tune_thresholds(preds: np.ndarray, labels: np.ndarray, id2labels: dict[int, 
         thresholds[idx] = best_thresh
 
     return thresholds
+
+
+def tune_binary_threshold(preds: np.ndarray, labels: np.ndarray) -> float:
+    precision, recall, thresh = precision_recall_curve(labels, preds)
+    f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
+
+    return thresh[np.argmax(f1)]

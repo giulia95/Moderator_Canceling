@@ -7,6 +7,12 @@ class ModelArguments:
         default="microsoft/deberta-v3-large",
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
+    problem_type: str = field(
+        default="multi_label_classification",
+        metadata={
+            "help": "Classification problem: multi_label_classification, single_label_classification, or regression"
+        },
+    )
     cls_dropout: float | None = field(
         default=None,
         metadata={"help": "Dropout probability for the classifier"},

@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", type=str, default="auto")
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--out-filepath", type=Path, required=True)
+    parser.add_argument("--problem-type", type=str, default="multi_label_classification")
 
     generation_group = parser.add_argument_group("Generation arguments")
     generation_group.add_argument("--adapter-name", type=str, default=None)

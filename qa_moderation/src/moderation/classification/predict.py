@@ -16,7 +16,7 @@ def compute_predictions(args: argparse.Namespace) -> None:
     set_seed(args.seed)
 
     # load the dataset
-    dataset, labels, label2id, id2label = load_qa_dataset(args.dataset_name, args.split, args.config_name)
+    dataset, labels, _, id2label = load_qa_dataset(args.dataset_name, args.split, args.config_name, args.problem_type)
 
     # load the tokenizer and model
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -24,6 +24,7 @@ def compute_predictions(args: argparse.Namespace) -> None:
         torch_dtype=args.dtype,
         device_map=args.device,
         trust_remote_code=True,
+        problem_type=args.problem_type,
     )
     model = torch.compile(model, mode="reduce-overhead", fullgraph=True)
     model.eval()
@@ -59,7 +60,12 @@ def compute_predictions(args: argparse.Namespace) -> None:
             )
             outputs = model(**inputs.to(model.device))
             logits = outputs.logits[0].detach()
-            predictions[i, :] = torch.sigmoid(logits)
+
+            predictions[i, :] = (
+                torch.sigmoid(logits)
+                if args.problem_type == "multi_label_classification"
+                else torch.softmax(logits, dim=-1)
+            )
 
     predictions = predictions.detach().cpu().numpy()
 

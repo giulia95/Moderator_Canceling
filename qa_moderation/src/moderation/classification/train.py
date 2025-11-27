@@ -47,7 +47,11 @@ def run(
     set_seed(training_args.seed)
 
     # Load dataset
-    dataset, labels, label2id, id2label = load_qa_dataset(data_args.dataset_name, config_name=data_args.config_name)
+    dataset, labels, label2id, id2label = load_qa_dataset(
+        data_args.dataset_name,
+        config_name=data_args.config_name,
+        problem_type=model_args.problem_type,
+    )
     logger.info("Dataset loaded %s", dataset)
     logger.info("Labels: %s", labels)
     logger.info("Label2id: %s", label2id)
@@ -67,7 +71,7 @@ def run(
     config = AutoConfig.from_pretrained(
         model_args.model_name_or_path,
         finetuning_task="text-classification",
-        problem_type="multi_label_classification",
+        problem_type=model_args.problem_type,
         num_labels=len(labels),
         id2label=id2label,
         label2id=label2id,
@@ -139,7 +143,9 @@ def run(
         data_collator = None
 
     compute_metrics_fn = (
-        compute_metrics if not data_args.tune_thresholds else compute_metrics_with_threshold_tuning(id2label)
+        compute_metrics
+        if not data_args.tune_thresholds
+        else compute_metrics_with_threshold_tuning(id2label, model_args.problem_type)
     )
 
     trainer = Trainer(
@@ -156,7 +162,7 @@ def run(
         for cb in callbacks:
             trainer.add_callback(cb)
 
-    trainer.add_callback(EarlyStoppingCallback(early_stopping_patience=2))
+    trainer.add_callback(EarlyStoppingCallback(early_stopping_patience=4))
 
     # Training
     train_result = trainer.train()
