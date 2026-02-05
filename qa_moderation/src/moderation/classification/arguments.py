@@ -45,6 +45,18 @@ class DataArguments:
         default="PKU-Alignment/Beavertails",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
+    label_processing: str = field(
+        default="<=2",
+        metadata={"help": "The operation to perform on the label column."},
+    )
+    cluster_filter_mode: str = field(
+        default="all",
+        metadata={"help": "The selection of the cluser to use."},
+    )
+    label_column: str = field(
+        default="label",
+        metadata={"help": "The name of the label column."},
+    )
     config_name: str = field(
         default="multilingual",
         metadata={"help": "The name of the dataset configuration to use."},
@@ -60,6 +72,10 @@ class DataArguments:
     eval_split_ratio: float = field(
         default=0.1,
         metadata={"help": "The ratio of the test split to use for evaluation."},
+    )
+    test_split_ratio: float = field(
+        default=0.2,
+        metadata={"help": "The ratio of the test split to use for the final evaluation."},
     )
     max_seq_length: int = field(
         default=512,

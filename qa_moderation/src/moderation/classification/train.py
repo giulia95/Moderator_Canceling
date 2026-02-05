@@ -51,6 +51,9 @@ def run(
         data_args.dataset_name,
         config_name=data_args.config_name,
         problem_type=model_args.problem_type,
+        label_processing = data_args.label_processing,
+        label_column = data_args.label_column,
+        cluster_filter_mode = data_args.cluster_filter_mode,
     )
     logger.info("Dataset loaded %s", dataset)
     logger.info("Labels: %s", labels)
@@ -120,16 +123,22 @@ def run(
             batched=True,
             desc="Tokenize dataset",
         )
+        # Now split the single dataset into train/eval/test
+        train_test = dataset['train'].train_test_split(
+            test_size=data_args.test_split_ratio,
+            seed=training_args.seed,
+            shuffle=True,
+        )
 
-        data_partition = dataset[data_args.train_split].train_test_split(
+        eval_test = train_test["train"].train_test_split(
             test_size=data_args.eval_split_ratio,
             seed=training_args.seed,
             shuffle=True,
         )
 
-    train_dataset = data_partition["train"]
-    eval_dataset = data_partition["test"]
-    test_dataset = dataset[data_args.test_split]
+    train_dataset = eval_test["train"]
+    eval_dataset = eval_test["test"]
+    test_dataset = train_test["test"]
 
     logger.info("Train: %d", len(train_dataset))
     logger.info("Eval: %d", len(eval_dataset))
@@ -143,11 +152,13 @@ def run(
         data_collator = None
 
     compute_metrics_fn = (
-        compute_metrics
+        compute_metrics(id2label,
+                        model_args.problem_type)
         if not data_args.tune_thresholds
         else compute_metrics_with_threshold_tuning(id2label, model_args.problem_type)
     )
 
+    # TODO : Qui custom loss x Focal Loss
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -196,7 +207,6 @@ def run(
         trainer.push_to_hub(**kwargs)
     else:
         trainer.create_model_card(**kwargs)
-
 
 if __name__ == "__main__":
     parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))  # type: ignore

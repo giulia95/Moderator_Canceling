@@ -7,7 +7,7 @@ from pathlib import Path
 from transformers import HfArgumentParser
 
 from moderation.classification.train import run as run_classification
-from moderation.generation.train import run as run_generation
+#from moderation.generation.train import run as run_generation
 from moderation.utils import setup_logging
 
 

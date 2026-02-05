@@ -3,22 +3,26 @@ model_name_or_path: "microsoft/deberta-v3-large"
 cls_dropout: 0.15
 trust_remote_code: True
 device_map: "cuda"
+problem_type: "single_label_classification"
 
 # Data Arguments
-dataset_name: "saiteki-kai/Beavertails-it"
-config_name: "multilingual"
-train_split: "330k_train"
-test_split: "330k_test"
+dataset_name: "aequa-tech/CADE"
+config_name: "default"
+label_processing: "<2"
+label_column: "average_acceptability"
+train_split: "train" #Huggingface name
 eval_split_ratio: 0.1
+test_split_ratio: 0.2
 max_seq_length: 512
 pad_to_max_length: False
-template: "{question} {answer}"
+#template: "{text}"
 tune_thresholds: True
+cluster_filter_mode: all #cluster 1 #all
 
 # Training Arguments
 seed: 42
 run_name: "QA-DeBERTa-v3-large"
-output_dir: "output/QA-DeBERTa-v3-large"
+output_dir: "./QA-DeBERTa-v3-large/V5"
 report_to: "wandb"
 log_level: "info"
 bf16: True
@@ -29,19 +33,19 @@ gradient_checkpointing: True
 gradient_checkpointing_kwargs:
   use_reentrant: False
 group_by_length: True
-num_train_epochs: 3
-per_device_train_batch_size: 8
-per_device_eval_batch_size: 8
-gradient_accumulation_steps: 4
+num_train_epochs: 10
+per_device_train_batch_size: 64 #8
+per_device_eval_batch_size: 64 #8
+gradient_accumulation_steps: 1 #4
 warmup_ratio: 0.03
-weight_decay: 0.0005
-learning_rate: 0.000006
-lr_scheduler_type: "cosine"
+weight_decay: 0.01 #0.0005
+learning_rate: 0.00001 #0.000006
+lr_scheduler_type: "linear" #"cosine"
 eval_strategy: "steps"
 eval_steps: 0.1
 save_steps: 0.1
 logging_steps: 10
-metric_for_best_model: "eval_micro_f1"
+metric_for_best_model: "eval_loss" #"unsafe_f1"
 load_best_model_at_end: True
 save_total_limit: 1
-push_to_hub: True
+push_to_hub: False
