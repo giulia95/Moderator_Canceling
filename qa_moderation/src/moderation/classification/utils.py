@@ -264,7 +264,7 @@ def format_prompts(
         raise ValueError("The dataset must contain a 'text' column.")
 
     raw_text = example["text"]
-    raw_title = example["title"]
+    #raw_title = example["title"]
 
     # 1. If user provides a template, apply it
     #    e.g. template="### Instruction:\n{text}\n###"
@@ -281,8 +281,8 @@ def format_prompts(
 
     # 3. Otherwise return the text unchanged
     else:
-        text = raw_title + '. ' + raw_text
-        #text = raw_text
+        #text = raw_title + '. ' + raw_text
+        text = raw_text
     #print(text)
     return {"text": text}
 

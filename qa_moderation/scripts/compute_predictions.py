@@ -3,7 +3,6 @@ import argparse
 from pathlib import Path
 
 from moderation.classification.predict import compute_predictions as run_classification
-from moderation.generation.predict import compute_predictions as run_generation
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,8 +33,4 @@ if __name__ == "__main__":
     # parse arguments
     args = parse_args()
 
-    # compute predictions depending on task
-    if args.task == "generation":
-        run_generation(args)
-    else:
-        run_classification(args)
+    run_classification(args)
