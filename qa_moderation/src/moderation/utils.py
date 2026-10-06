@@ -1,6 +1,9 @@
 import logging
 import os
 import sys
+import pandas as pd
+import json
+from datasets import Dataset
 
 from importlib.util import find_spec
 
@@ -190,3 +193,54 @@ def tune_binary_threshold(preds: np.ndarray, labels: np.ndarray) -> float:
     f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
 
     return thresh[np.argmax(f1)]
+
+
+def infer_label_mapping(series: pd.Series) -> dict[str | int, int]:
+    values = [item for item in series.dropna().astype(str).tolist()]
+    unique_values = sorted(set(values))
+
+    normalized = {str(value).strip().lower(): value for value in unique_values}
+
+    if set(normalized) == {"0", "1"}:
+        return {"0": 0, "1": 1}
+    if set(normalized) == {"false", "true"}:
+        return {"false": 0, "true": 1}
+    if set(normalized) <= {"safe", "unsafe"}:
+        return {"safe": 0, "unsafe": 1}
+    if set(normalized) <= {"unhealthy", "healthy"}:
+        return {"healthy": 0, "unhealthy": 1}
+
+    raise ValueError(
+        "Could not infer a binary label mapping automatically. "
+        "Please supply --label-mapping, for example '{\"safe\":0,\"unsafe\":1}'."
+    )
+
+
+def prepare_csv_dataset(
+    csv_path: str,
+    text_column: str = "text",
+    label_column: str = "label",
+    label_mapping: str | None = None,
+) -> Dataset:
+    df = pd.read_csv(csv_path)    
+    missing = [column for column in (text_column, label_column) if column not in df.columns]
+    if missing:
+        raise ValueError(f"CSV is missing required columns: {missing}")
+
+    subset = df[[text_column, label_column]].dropna(subset=[text_column, label_column]).copy()
+    subset = subset.rename(columns={text_column: "text", label_column: "label"})
+
+    print("Mapping Labels.. ")
+    if label_mapping is not None:
+        mapping = json.loads(label_mapping)
+        print(subset["label"].dtype)
+        if subset["label"].dtype in ["int64", "int32"]:
+            mapping = {int(k): v for k, v in mapping.items()}
+        subset["label"] = subset["label"].map(mapping)
+    else:
+        subset["label"] = subset["label"].map(infer_label_mapping(subset["label"]))
+
+    subset = subset[subset["label"].notna()].copy()
+    subset["label"] = subset["label"].astype(int)
+
+    return Dataset.from_pandas(subset)

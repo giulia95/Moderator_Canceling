@@ -2,10 +2,14 @@ import logging
 import os
 import sys
 
+from collections import Counter
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pandas as pd
+
+from datasets import Dataset, concatenate_datasets
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -27,8 +31,13 @@ from moderation.classification.utils import (
     load_qa_dataset,
     tokenize,
 )
-from moderation.utils import setup_logging
+from moderation.utils import prepare_csv_dataset, setup_logging
 
+
+def log_label_distribution(name, dataset):
+    distribution = Counter(dataset["label"])
+    logger.info("%s label distribution: %s", name, dict(distribution))
+    print("%s label distribution: %s", name, dict(distribution))
 
 if TYPE_CHECKING:
     from transformers import TrainerCallback
@@ -46,7 +55,7 @@ def run(
 ) -> None:
     set_seed(training_args.seed)
 
-    # Load dataset
+    # Load Original dataset
     dataset, labels, label2id, id2label = load_qa_dataset(
         data_args.dataset_name,
         config_name=data_args.config_name,
@@ -143,6 +152,60 @@ def run(
     logger.info("Train: %d", len(train_dataset))
     logger.info("Eval: %d", len(eval_dataset))
     logger.info("Test: %d", len(test_dataset))
+
+    log_label_distribution("Original train", train_dataset)
+
+    # PROCESS CSV SEPARATELY 
+    if data_args.additional_csv_path:
+        csv_dataset = prepare_csv_dataset( 
+            csv_path=data_args.additional_csv_path, 
+            text_column=data_args.csv_text_column, 
+            label_column=data_args.csv_label_column, 
+            label_mapping=data_args.csv_label_mapping, 
+            ) 
+        
+        logger.info( "Loaded additional CSV dataset: %d examples", 
+                len(csv_dataset), 
+                )
+
+        with training_args.main_process_first(
+            desc="CSV dataset preprocessing"
+            ):
+            csv_dataset = csv_dataset.map(
+                partial( tokenize, tokenizer=tokenizer,
+                    max_length=max_seq_length,
+                    padding=data_args.padding, 
+                    add_eos_token=model_args.add_eos_token,
+                    ), 
+                batched=True, 
+                desc="Tokenize CSV dataset", 
+                )
+
+        log_label_distribution("CSV", csv_dataset)
+
+        # ADD CSV ONLY TO TRAINING DATA
+        train_dataset = concatenate_datasets( 
+            [ 
+                train_dataset, 
+                csv_dataset, 
+                ] ) 
+                
+        logger.info( 
+            "Final train dataset: %d examples",
+            len(train_dataset), 
+            ) 
+            
+        logger.info( 
+            "Eval dataset: %d examples",
+            len(eval_dataset),
+            ) 
+            
+        logger.info( 
+            "Test dataset: %d examples", 
+            len(test_dataset),
+            )
+    
+        log_label_distribution("Concatenated train", train_dataset)
 
     if data_args.pad_to_max_length:
         data_collator = default_data_collator

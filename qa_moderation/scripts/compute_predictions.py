@@ -7,7 +7,6 @@ from moderation.classification.predict import compute_predictions as run_classif
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", choices=["classification", "generation"], required=True, help="Task")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--model-name", type=str, required=True)
     parser.add_argument("--dataset-name", type=str, required=True)

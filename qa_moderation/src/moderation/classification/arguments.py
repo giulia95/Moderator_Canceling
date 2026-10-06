@@ -101,6 +101,11 @@ class DataArguments:
         metadata={"help": "Whether to tune thresholds for each label."},
     )
 
+    additional_csv_path: str | None = None
+    csv_text_column: str = "text"
+    csv_label_column: str = "label"
+    csv_label_mapping: str | None = None
+
     def __post_init__(self) -> None:
         self.padding = "max_length" if self.pad_to_max_length else False
 
