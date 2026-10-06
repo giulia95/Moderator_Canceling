@@ -19,6 +19,12 @@ pad_to_max_length: False
 tune_thresholds: True
 cluster_filter_mode: all #cluster 1 #all
 
+#Additional csv to include in training
+additional_csv_path: "./Canceling/HS_aggregated.csv" #set to None otherwise
+csv_text_column: "text"
+csv_label_column: "majority_vote"
+csv_label_mapping: '{"2": 0, "1": 1}'
+
 # Training Arguments
 seed: 42
 run_name: "QA-DeBERTa-v3-large"
